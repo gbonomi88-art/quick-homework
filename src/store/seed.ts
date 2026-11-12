@@ -141,5 +141,6 @@ export function createSeed(): DemoData {
     garages: {},
     chats: {},
     buildCity: {},
+    progress: {},
   };
 }

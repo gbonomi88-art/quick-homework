@@ -89,3 +89,11 @@ set role authenticated;
 select public.qh_save_best(120); select public.qh_save_best(80);
 reset role;
 select pg_temp.check((select (garage->>'best')::int from qh.profiles where name = 'Mattia') = 120, 'Rekord wird gespeichert und nie kleiner');
+-- Spielstand speichern: nur eigene Daten, nur bekannte Spiele
+select pg_temp.as_user(mattia) from ids;
+set role authenticated;
+select public.qh_save_progress('huepf', '{"best":42,"stars":7}'); select public.qh_save_progress('tor', '{"best":900}');
+select public.qh_save_progress('hack', '{"x":1}');
+select pg_temp.check((public.qh_get_state()->'progress'->(select mattia::text from ids)->'huepf'->>'best')::int = 42, 'Spielstand kommt zurück');
+reset role;
+select pg_temp.check((select game_progress ? 'tor' and not game_progress ? 'hack' from qh.profiles where name = 'Mattia'), 'Nur erlaubte Spiele werden gespeichert');

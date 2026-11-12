@@ -73,6 +73,7 @@ export async function fetchState(): Promise<{ data: DemoData; me: ServerState['m
     garages: s.garages ?? {},
     chats: s.chats ?? {},
     buildCity: s.buildCity ?? {},
+    progress: s.progress ?? {},
     // Startzeit auf die Uhr dieses Geräts umrechnen (Server-Uhr kann abweichen).
     gameSession: gs ? { submissionId: gs.submissionId, game: gs.game, startedAt: gs.startedAt - (gs.serverNow - Date.now()), skippedMs: gs.skippedMs } : undefined,
   };

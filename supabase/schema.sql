@@ -27,8 +27,10 @@ create table if not exists qh.profiles (
   is_new boolean not null default false,
   garage jsonb,
   build_city jsonb,
+  game_progress jsonb,
   created_at timestamptz not null default now()
 );
+alter table qh.profiles add column if not exists game_progress jsonb;
 create unique index if not exists profiles_class_name on qh.profiles (class_id, lower(name));
 
 create table if not exists qh.homeworks (
@@ -187,6 +189,7 @@ begin
         and extract(isodow from e.date) <= 5), '[]'),
     'garages', case when p.role = 'kid' and p.garage is not null then jsonb_build_object(p.user_id::text, p.garage) else '{}'::jsonb end,
     'buildCity', case when p.role = 'kid' and p.build_city is not null then jsonb_build_object(p.user_id::text, p.build_city) else '{}'::jsonb end,
+    'progress', case when p.role = 'kid' and p.game_progress is not null then jsonb_build_object(p.user_id::text, p.game_progress) else '{}'::jsonb end,
     'chats', coalesce((select jsonb_object_agg(ch.student_id::text || ':' || ch.homework_id::text, ch.messages)
       from qh.chats ch join qh.profiles s on s.user_id = ch.student_id
       where s.class_id = p.class_id and (ch.student_id = p.user_id or (p.role = 'teacher' and (c.settings->>'hausiTeacherCanRead')::boolean))), '{}'),
@@ -273,6 +276,14 @@ end $$;
 
 create or replace function public.qh_save_city(p_cells jsonb) returns void language sql security definer set search_path = qh, public as $$
   update qh.profiles set build_city = p_cells where user_id = auth.uid() and role = 'kid' and jsonb_array_length(p_cells) = 60 $$;
+
+-- Spielstand pro Spiel (Rekorde, Freischaltungen, Stadt). Nur eigene Daten, Grösse begrenzt.
+create or replace function public.qh_save_progress(p_game text, p_state jsonb) returns void language plpgsql security definer set search_path = qh, public as $$
+declare p qh.profiles := qh.me();
+begin
+  if p.role <> 'kid' or p_game not in ('bau', 'huepf', 'tor') or jsonb_typeof(p_state) <> 'object' or length(p_state::text) > 30000 then return; end if;
+  update qh.profiles set game_progress = jsonb_set(coalesce(game_progress, '{}'::jsonb), array[p_game], p_state) where user_id = p.user_id;
+end $$;
 
 create or replace function public.qh_set_photo(p_photo text) returns void language plpgsql security definer set search_path = qh, public as $$
 begin
@@ -469,7 +480,7 @@ begin
       update auth.users set email = qh.login_email(p_class, kid.value->>0), encrypted_password = extensions.crypt(kid.value->>1, extensions.gen_salt('bf')) where id = uid;
     end if;
     update qh.profiles set name = kid.value->>0, coins = (kid.value->>2)::int, forgotten_month = null, forgotten_count = 0, skip_next_game = false,
-      locked_until_positive = false, photo = null, is_new = false, garage = null, build_city = null where user_id = uid;
+      locked_until_positive = false, photo = null, is_new = false, garage = null, build_city = null, game_progress = null where user_id = uid;
   end loop;
   insert into qh.homeworks (class_id, subject, title, instruction, due_date, important, kind, tasks, hausi_tip) values
   (p_class, 'nmg', 'Energie und Strom', 'Beantworte die Fragen in ganzen Sätzen.', mon + 1, true, 'question',

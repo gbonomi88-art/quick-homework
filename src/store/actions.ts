@@ -19,6 +19,11 @@ export async function refresh(): Promise<void> {
   const { data } = await fetchState();
   const pending = st().pendingDrafts;
   data.submissions = data.submissions.map((s) => (pending[s.id] && s.status === 'offen' ? { ...s, answers: pending[s.id] } : s));
+  // Noch nicht hochgeladene Spielstände nicht vom Server überschreiben lassen
+  const me = Object.keys(data.progress ?? {})[0] ?? (st().session?.role === 'kid' ? (st().session as { studentId: string }).studentId : '');
+  if (me && Object.keys(pendingProgress).length) {
+    data.progress = { ...data.progress, [me]: { ...data.progress?.[me], ...pendingProgress } };
+  }
   useStore.setState({ data, syncError: null });
 }
 
@@ -53,6 +58,17 @@ export async function logout() {
   if (cloud()) { await flushDrafts().catch(() => undefined); await signOut(); }
   st().logout();
 }
+
+const pendingProgress: Record<string, object> = {};
+let progressTimer: ReturnType<typeof setTimeout> | undefined;
+export function flushProgress() {
+  clearTimeout(progressTimer); progressTimer = undefined;
+  for (const [game, state] of Object.entries(pendingProgress)) {
+    delete pendingProgress[game];
+    if (cloud()) rpc('qh_save_progress', { p_game: game, p_state: state }).catch(() => undefined);
+  }
+}
+if (typeof window !== 'undefined') window.addEventListener('pagehide', flushProgress);
 
 export const act = {
   // ----- Kind -----
@@ -99,6 +115,14 @@ export const act = {
   async saveCity(studentId: string, cells: string[]) {
     local((d) => ({ ...d, buildCity: { ...d.buildCity, [studentId]: cells } }));
     if (cloud()) await rpc('qh_save_city', { p_cells: cells }).catch(() => undefined);
+  },
+  /** Spielstand lokal sofort, in der Cloud gebündelt (höchstens alle 4 s). */
+  saveProgress(studentId: string, game: 'bau' | 'huepf' | 'tor', state: object, flush = false) {
+    local((d) => ({ ...d, progress: { ...d.progress, [studentId]: { ...d.progress?.[studentId], [game]: state } } }));
+    if (!cloud()) return;
+    pendingProgress[game] = state;
+    if (flush) return flushProgress();
+    if (!progressTimer) progressTimer = setTimeout(flushProgress, 4000);
   },
   /** Neuer Meter-Rekord in der Auto-Welt. */
   async saveBest(studentId: string, meters: number) {

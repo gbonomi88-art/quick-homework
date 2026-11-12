@@ -112,5 +112,7 @@ export interface DemoData {
   garages: Record<string, Garage>;
   chats: Record<string, ChatMessage[]>; // key: studentId:homeworkId
   gameSession?: GameSession;
-  buildCity: Record<string, string[]>; // studentId -> 60 Felder
+  buildCity: Record<string, string[]>; // studentId -> 60 Felder (alter Baumeister)
+  /** Spielstände pro Kind und Spiel (Rekorde, Freischaltungen, Stadt). */
+  progress?: Record<string, Partial<Record<'bau' | 'huepf' | 'tor', unknown>>>;
 }
