@@ -1,0 +1,17 @@
+.jp { position: relative; flex-grow: 1; min-height: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.jp-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.jp-zones { position: absolute; inset: auto 0 calc(20px + var(--safe-bottom)) 0; display: flex; justify-content: space-between; padding: 0 calc(20px + var(--safe-right)) 0 calc(20px + var(--safe-left)); pointer-events: none; z-index: 3; }
+.jp-zones div { width: 84px; height: 84px; border-radius: 42px; background: rgba(255,255,255,0.22); color: #FFFFFF; display: flex; align-items: center; justify-content: center; border: 3px solid rgba(255,255,255,0.5); transition: background .1s; }
+.jp-zones div.on { background: rgba(255,255,255,0.55); }
+.jp-ready-m { margin-top: 10px; text-align: left; }
+.jp-ready-m .kit-missions li { padding: 6px 10px; }
+@media (max-width: 899px) {
+  .gf-huepf .pill-text, .gf-tor .pill-text, .gf-bau .pill-text { display: none; }
+  .gf-huepf .gf-pill.accent, .gf-tor .gf-pill.accent { width: 46px; padding: 0; justify-content: center; }
+}
+@media (min-width: 700px) {
+  .gf-huepf .gf-skip, .gf-tor .gf-skip { right: auto; left: 50%; transform: translateX(-50%); bottom: calc(14px + var(--safe-bottom)); top: auto; }
+}
+@media (max-width: 699px) {
+  .gf-huepf .gf-skip, .gf-tor .gf-skip { top: auto; right: auto; left: 50%; transform: translateX(-50%); bottom: calc(14px + var(--safe-bottom)); font-size: 11px; padding: 0 8px; max-width: 160px; }
+}
