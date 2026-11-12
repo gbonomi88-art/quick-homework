@@ -1,7 +1,11 @@
 import { HashRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { Login } from './screens/Login';
-import { Placeholder } from './screens/Placeholder';
+import { Lehrerin } from './screens/teacher/Lehrerin';
+import { HausaufgabeNeu } from './screens/teacher/HausaufgabeNeu';
+import { Korrigieren } from './screens/teacher/Korrigieren';
+import { SchuelerVerwalten } from './screens/teacher/SchuelerVerwalten';
+import { AgendaLehrerin } from './screens/teacher/AgendaLehrerin';
 import { Uebersicht } from './screens/student/Uebersicht';
 import { Aufgabe } from './screens/student/Aufgabe';
 import { Belohnung } from './screens/student/Belohnung';
@@ -36,6 +40,7 @@ function Game() {
 }
 
 const kid = (el: ReactNode) => <RequireRole role="kid">{el}</RequireRole>;
+const teacher = (el: ReactNode) => <RequireRole role="teacher">{el}</RequireRole>;
 
 export default function App() {
   return (
@@ -49,7 +54,11 @@ export default function App() {
         <Route path="/kind/shop" element={kid(<Shop />)} />
         <Route path="/kind/korrektur/:id" element={kid(<Korrektur />)} />
         <Route path="/kind/agenda" element={kid(<Agenda />)} />
-        <Route path="/lehrerin/*" element={<RequireRole role="teacher"><Placeholder title="Lehrerin-Bereich" /></RequireRole>} />
+        <Route path="/lehrerin" element={teacher(<Lehrerin />)} />
+        <Route path="/lehrerin/neu" element={teacher(<HausaufgabeNeu />)} />
+        <Route path="/lehrerin/korrigieren/:homeworkId" element={teacher(<Korrigieren />)} />
+        <Route path="/lehrerin/schueler" element={teacher(<SchuelerVerwalten />)} />
+        <Route path="/lehrerin/agenda" element={teacher(<AgendaLehrerin />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <DemoBar />

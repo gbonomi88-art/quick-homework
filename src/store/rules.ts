@@ -3,7 +3,8 @@
  * und später auch in einem Backend wiederverwendbar sind.
  * Jede Funktion bekommt den Zustand und gibt einen neuen Zustand zurück.
  */
-import type { DemoData, Student, Submission, Task } from './types';
+import type { AgendaEvent, DemoData, GameId, Homework, Settings, Student, Submission, Task } from './types';
+import { DEMO_TODAY } from './constants';
 
 export class RuleError extends Error {}
 
@@ -148,4 +149,76 @@ export function saveDraft(d: DemoData, submissionId: string, answers: string[]):
 /** Kind hat die Korrektur angesehen („Verstanden“). */
 export function markSeen(d: DemoData, submissionId: string): DemoData {
   return mapSub(d, submissionId, (s) => ({ ...s, seenByStudent: true }));
+}
+
+// ---------- Lehrerin ----------
+
+let idCounter = 0;
+export const newId = (p: string) => `${p}-${Date.now().toString(36)}-${(idCounter++).toString(36)}`;
+
+/** Abgabetag vor heute → nächste Woche, sonst diese Woche. */
+export const weekForWeekday = (wd: number): 0 | 1 => (wd < DEMO_TODAY.weekday ? 1 : 0);
+
+export function validateHomework(h: Omit<Homework, 'id' | 'createdBy' | 'dueWeekOffset'>): string | null {
+  if (!h.title.trim()) return 'Bitte einen Titel eingeben.';
+  if (h.tasks.length === 0) return 'Bitte mindestens eine Aufgabe eintragen.';
+  for (const [i, t] of h.tasks.entries()) {
+    const n = `Aufgabe ${i + 1}`;
+    if (t.kind === 'compare' && (!t.left.trim() || !t.right.trim())) return `${n}: Bitte links und rechts ausfüllen.`;
+    if (t.kind === 'question' && !t.question.trim()) return `${n}: Bitte eine Frage eingeben.`;
+    if (t.kind === 'transform' && (!t.word.trim() || !t.solution.trim())) return `${n}: Bitte Wort und Lösung eingeben.`;
+  }
+  return null;
+}
+
+/** „An Klasse verteilen“: Hausaufgabe anlegen + für jedes Kind eine offene Abgabe. */
+export function createHomework(d: DemoData, h: Omit<Homework, 'id' | 'createdBy' | 'dueWeekOffset'>): DemoData {
+  const err = validateHomework(h);
+  if (err) throw new RuleError(err);
+  const hw: Homework = { ...h, id: newId('hw'), createdBy: 'teacher', dueWeekOffset: weekForWeekday(h.dueWeekday) };
+  const subs: Submission[] = d.students.map((s) => ({
+    id: `sub-${hw.id}-${s.id}`, homeworkId: hw.id, studentId: s.id, answers: hw.tasks.map(() => ''), status: 'offen',
+  }));
+  return { ...d, homeworks: [...d.homeworks, hw], submissions: [...d.submissions, ...subs] };
+}
+
+/** Kind hinzufügen: startet mit 0 Spielgeld und bekommt die aktuellen Hausaufgaben. */
+export function addStudent(d: DemoData, name: string, password: string): DemoData {
+  const n = name.trim();
+  if (!n || !password.trim()) throw new RuleError('Bitte Name und Passwort eingeben.');
+  if (d.students.some((s) => s.name.toLowerCase() === n.toLowerCase())) throw new RuleError('Diesen Namen gibt es schon in der Klasse.');
+  const id = newId('kid');
+  const st: Student = { id, name: n, password: password.trim(), coins: 0, forgottenThisMonth: 0, skipNextGame: false, lockedUntilPositive: false, isNew: true };
+  const subs: Submission[] = d.homeworks.filter((h) => h.dueWeekOffset >= 0).map((h) => ({
+    id: `sub-${h.id}-${id}`, homeworkId: h.id, studentId: id, answers: h.tasks.map(() => ''), status: 'offen',
+  }));
+  return { ...d, students: [...d.students, st], submissions: [...d.submissions, ...subs] };
+}
+
+/** Name/Passwort ändern. Spielgeld ist hier bewusst nicht änderbar. */
+export function updateStudent(d: DemoData, id: string, patch: { name?: string; password?: string }): DemoData {
+  const name = patch.name?.trim();
+  const password = patch.password?.trim();
+  if (name !== undefined && !name) throw new RuleError('Bitte einen Namen eingeben.');
+  if (password !== undefined && !password) throw new RuleError('Bitte ein Passwort eingeben.');
+  if (name && d.students.some((s) => s.id !== id && s.name.toLowerCase() === name.toLowerCase())) throw new RuleError('Diesen Namen gibt es schon in der Klasse.');
+  return mapStudent(d, id, (s) => ({ ...s, ...(name ? { name } : {}), ...(password ? { password } : {}) }));
+}
+
+export function addEvent(d: DemoData, e: Omit<AgendaEvent, 'id'>): DemoData {
+  if (!e.title.trim()) throw new RuleError('Bitte einen Titel eingeben.');
+  return { ...d, events: [...d.events, { ...e, title: e.title.trim(), note: e.note?.trim() || undefined, id: newId('ev') }] };
+}
+export function deleteEvent(d: DemoData, id: string): DemoData {
+  return { ...d, events: d.events.filter((e) => e.id !== id) };
+}
+
+export function toggleGame(d: DemoData, g: GameId): DemoData {
+  const has = d.settings.allowedGames.includes(g);
+  const next = has ? d.settings.allowedGames.filter((x) => x !== g) : [...d.settings.allowedGames, g];
+  if (next.length === 0) throw new RuleError('Mindestens ein Spiel muss erlaubt bleiben.');
+  return { ...d, settings: { ...d.settings, allowedGames: (['auto', 'bau', 'huepf', 'tor'] as GameId[]).filter((x) => next.includes(x)) } };
+}
+export function setSetting<K extends 'hausiTeacherCanRead' | 'hausiSchoolTopicsOnly' | 'startImage'>(d: DemoData, k: K, v: Settings[K]): DemoData {
+  return { ...d, settings: { ...d.settings, [k]: v } };
 }
