@@ -99,6 +99,8 @@ export interface GameSession {
 }
 
 export interface DemoData {
+  /** Montag der aktuellen Woche (ISO) + heutiger Wochentag; fehlt = Demo-Kalender. */
+  calendar?: { monday: string; weekday: number };
   students: Student[];
   homeworks: Homework[];
   submissions: Submission[];

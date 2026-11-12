@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStore } from '../../store/useStore';
-import { createHomework, validateHomework, weekForWeekday, RuleError } from '../../store/rules';
+import { validateHomework, weekForWeekday } from '../../store/rules';
+import { act, errorText } from '../../store/actions';
 import { CLASS_NAME, WEEKDAYS } from '../../store/constants';
 import type { SubjectId, Task, TaskKind, Weekday } from '../../store/types';
 import { SUBJECTS, SUBJECT_ORDER, TASK_COLORS } from '../../data/subjects';
@@ -19,7 +19,6 @@ const empty = (k: TaskKind): Task =>
   k === 'compare' ? { kind: 'compare', left: '', right: '', solution: '=' } : k === 'question' ? { kind: 'question', question: '', sampleSolution: '' } : { kind: 'transform', word: '', prefix: '', solution: '' };
 
 export function HausaufgabeNeu() {
-  const apply = useStore((s) => s.apply);
   const nav = useNavigate();
   const [subject, setSubject] = useState<SubjectId>('mathe');
   const [due, setDue] = useState<Weekday>(4);
@@ -40,14 +39,16 @@ export function HausaufgabeNeu() {
     tasks: tasks.map((t) => (t.kind === 'question' && !t.sampleSolution?.trim() ? { kind: 'question' as const, question: t.question } : t)),
     hausiTip: tip.trim() || undefined,
   });
-  const submit = () => {
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
     const d = draft();
     const err = validateHomework(d);
     if (err) { setError(err); return; }
+    setBusy(true);
     try {
-      apply((x) => createHomework(x, d));
+      await act.createHomework(d);
       nav('/lehrerin', { state: { flash: `«${d.title}» wurde an die Klasse ${CLASS_NAME} verteilt.` } });
-    } catch (e) { if (e instanceof RuleError) setError(e.message); else throw e; }
+    } catch (e) { setError(errorText(e)); setBusy(false); }
   };
 
   const previewText = (t: Task) =>
@@ -124,7 +125,7 @@ export function HausaufgabeNeu() {
           <div aria-live="assertive">{error && <div className="msg-error">{error}</div>}</div>
           <div className="t-actions">
             <button type="button" className="t-secondary" onClick={() => nav('/lehrerin')}>Abbrechen</button>
-            <button type="submit" className="t-primary">An Klasse {CLASS_NAME} verteilen</button>
+            <button type="submit" className="t-primary" disabled={busy}>An Klasse {CLASS_NAME} verteilen</button>
           </div>
         </form>
         <aside className="t-preview" aria-label="Vorschau">

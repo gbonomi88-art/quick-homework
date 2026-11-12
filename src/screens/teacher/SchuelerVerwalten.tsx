@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { addStudent, updateStudent, RuleError } from '../../store/rules';
+import { act, errorText } from '../../store/actions';
 import { CLASS_NAME } from '../../store/constants';
 import { TeacherSubHeader } from './TeacherHeader';
 import './teacher.css';
@@ -10,7 +10,6 @@ const newPassword = () => WORDS[Math.floor(Math.random() * WORDS.length)] + (10 
 
 export function SchuelerVerwalten() {
   const data = useStore((s) => s.data);
-  const apply = useStore((s) => s.apply);
   const [shown, setShown] = useState<Record<string, boolean>>({});
   const [edit, setEdit] = useState<{ id: string; name: string; password: string } | null>(null);
   const [editErr, setEditErr] = useState('');
@@ -20,15 +19,21 @@ export function SchuelerVerwalten() {
   const [added, setAdded] = useState('');
   const list = [...data.students].sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
-  const save = () => {
-    try { apply((d) => updateStudent(d, edit!.id, { name: edit!.name, password: edit!.password })); setEdit(null); setEditErr(''); }
-    catch (e) { if (e instanceof RuleError) setEditErr(e.message); else throw e; }
-  };
-  const add = () => {
+  const cloud = useStore((s) => s.mode === 'klasse');
+  const [savedPw, setSavedPw] = useState<{ name: string; pw: string } | null>(null);
+  const save = async () => {
+    const pwChanged = cloud ? edit!.password !== '' : true;
     try {
-      apply((d) => addStudent(d, name, pw));
-      setAdded(`${name.trim()} ist jetzt in der Klasse ${CLASS_NAME}.`); setName(''); setPw(newPassword()); setAddErr('');
-    } catch (e) { if (e instanceof RuleError) setAddErr(e.message); else throw e; }
+      await act.updateStudent(edit!.id, { name: edit!.name, ...(pwChanged ? { password: edit!.password } : {}) });
+      if (cloud && edit!.password) setSavedPw({ name: edit!.name, pw: edit!.password });
+      setEdit(null); setEditErr('');
+    } catch (e) { setEditErr(errorText(e)); }
+  };
+  const add = async () => {
+    try {
+      await act.addStudent(name, pw);
+      setAdded(`${name.trim()} ist jetzt in der Klasse ${CLASS_NAME}. Start-Passwort: ${pw}`); setName(''); setPw(newPassword()); setAddErr('');
+    } catch (e) { setAddErr(errorText(e)); }
   };
 
   return (
@@ -37,24 +42,25 @@ export function SchuelerVerwalten() {
       <main className="t-students">
         <section className="t-card" aria-labelledby="st-h">
           <div className="t-subs-head"><h2 id="st-h">Klasse {CLASS_NAME}</h2><span className="t-muted">{list.length} Schüler</span></div>
+          <div aria-live="polite">{savedPw && <div className="msg-ok">Neues Passwort für {savedPw.name}: <b>{savedPw.pw}</b> – bitte dem Kind geben. Es wird nur jetzt angezeigt.</div>}</div>
           {list.map((s) => (
             <div key={s.id} className="t-st">
               <div className="t-st-row">
                 <div className="t-kid-avatar">{s.photo ? <img src={s.photo} alt="" /> : s.name[0]}</div>
                 <div className="t-kid-name">
                   <div>{s.name}{s.isNew && <span className="tag-new">NEU</span>}</div>
-                  <div className="t-st-pw">Passwort: {shown[s.id] ? s.password : '••••••'}</div>
+                  <div className="t-st-pw">Passwort: {cloud ? 'sicher gespeichert' : shown[s.id] ? s.password : '••••••'}</div>
                 </div>
                 <span className="t-money" style={s.coins < 0 ? { background: 'var(--danger-dark)', color: '#FFFFFF' } : undefined}>{s.coins} Spielgeld</span>
-                <button type="button" className="t-act" aria-pressed={!!shown[s.id]} aria-label={`Passwort von ${s.name} ${shown[s.id] ? 'verbergen' : 'anzeigen'}`}
-                  onClick={() => setShown({ ...shown, [s.id]: !shown[s.id] })}>{shown[s.id] ? 'Verbergen' : 'Anzeigen'}</button>
-                <button type="button" className="t-act strong" aria-expanded={edit?.id === s.id} onClick={() => { setEdit({ id: s.id, name: s.name, password: s.password }); setEditErr(''); }}>Bearbeiten</button>
+                {!cloud && <button type="button" className="t-act" aria-pressed={!!shown[s.id]} aria-label={`Passwort von ${s.name} ${shown[s.id] ? 'verbergen' : 'anzeigen'}`}
+                  onClick={() => setShown({ ...shown, [s.id]: !shown[s.id] })}>{shown[s.id] ? 'Verbergen' : 'Anzeigen'}</button>}
+                <button type="button" className="t-act strong" aria-expanded={edit?.id === s.id} onClick={() => { setEdit({ id: s.id, name: s.name, password: cloud ? '' : s.password }); setEditErr(''); setSavedPw(null); }}>Bearbeiten</button>
               </div>
               {edit?.id === s.id && (
                 <div className="t-st-edit">
                   <div className="t-row">
                     <label className="t-field" style={{ flex: '1 1 160px' }}>Name<input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></label>
-                    <label className="t-field" style={{ flex: '1 1 160px' }}>Passwort<input value={edit.password} onChange={(e) => setEdit({ ...edit, password: e.target.value })} /></label>
+                    <label className="t-field" style={{ flex: '1 1 160px' }}>{cloud ? 'Neues Passwort' : 'Passwort'}<input value={edit.password} placeholder={cloud ? 'leer lassen = unverändert' : undefined} onChange={(e) => setEdit({ ...edit, password: e.target.value })} /></label>
                     <button type="button" className="t-act" onClick={() => setEdit({ ...edit, password: newPassword() })}>Neues erstellen</button>
                   </div>
                   <div className="t-muted small">Spielgeld ({s.coins}) kann man hier nicht ändern.</div>

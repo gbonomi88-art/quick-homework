@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { autoCheck, gradeSubmission, RuleError } from '../../store/rules';
+import { autoCheck } from '../../store/rules';
+import { act, errorText } from '../../store/actions';
 import type { Task } from '../../store/types';
 import { SUBJECTS } from '../../data/subjects';
 import { Coin } from '../../components/icons';
@@ -15,7 +16,6 @@ export function Korrigieren() {
   const { homeworkId } = useParams();
   const [params, setParams] = useSearchParams();
   const data = useStore((s) => s.data);
-  const apply = useStore((s) => s.apply);
   const hw = data.homeworks.find((h) => h.id === homeworkId);
   const kids = [...data.students].sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const subs = data.submissions.filter((s) => s.homeworkId === homeworkId);
@@ -39,11 +39,11 @@ export function Korrigieren() {
   const reward = done ? sub!.reward ?? base : perfect ? base * 2 : base;
 
   const set = (i: number, v: boolean) => setOverrides({ ...overrides, [kidId!]: hw.tasks.map((_, j) => (j === i ? v : overrides[kidId!]?.[j])) });
-  const send = () => {
+  const send = async () => {
     try {
-      apply((d) => gradeSubmission(d, sub!.id, grading, comment.trim()));
+      await act.grade(sub!.id, grading, comment.trim());
       setSent(`Korrektur an ${kid!.name} gesendet.`); setErr('');
-    } catch (e) { if (e instanceof RuleError) setErr(e.message); else throw e; }
+    } catch (e) { setErr(errorText(e)); }
   };
 
   return (

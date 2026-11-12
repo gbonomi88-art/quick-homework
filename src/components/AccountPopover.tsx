@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Dialog, CloseButton } from './Dialog';
 import { Coin, IconCamera } from './icons';
 import { resizeImage } from '../utils/image';
+import { errorText } from '../store/actions';
 
 interface Props {
   name: string;
@@ -10,8 +11,9 @@ interface Props {
   photo?: string;
   password: string;
   coins?: number;
-  onPhoto: (dataUrl: string) => void;
-  onChangePassword: (pw: string) => void;
+  onPhoto: (dataUrl: string) => Promise<void>;
+  /** Prüft das alte Passwort und speichert das neue (wirft RuleError mit Text). */
+  onChangePassword: (oldPw: string, newPw: string) => Promise<void>;
   onLogout: () => void;
   onClose: () => void;
 }
@@ -25,13 +27,19 @@ export function AccountPopover(p: Props) {
   const [pw2, setPw2] = useState('');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const save = () => {
-    if (oldPw !== p.password) return setMsg({ ok: false, text: 'Das alte Passwort stimmt nicht.' });
+  const [busy, setBusy] = useState(false);
+  // Leeres Passwort = Klassen-Modus: Passwort ist sicher (gehasht) gespeichert und nicht anzeigbar.
+  const hidden = p.password === '';
+  const save = async () => {
     if (pw1.length < 6) return setMsg({ ok: false, text: 'Das neue Passwort braucht mindestens 6 Zeichen.' });
     if (pw1 !== pw2) return setMsg({ ok: false, text: 'Die beiden neuen Passwörter sind nicht gleich.' });
-    p.onChangePassword(pw1);
-    setForm(false); setOldPw(''); setPw1(''); setPw2('');
-    setMsg({ ok: true, text: 'Passwort geändert!' });
+    setBusy(true);
+    try {
+      await p.onChangePassword(oldPw, pw1);
+      setForm(false); setOldPw(''); setPw1(''); setPw2('');
+      setMsg({ ok: true, text: 'Passwort geändert!' });
+    } catch (e) { setMsg({ ok: false, text: errorText(e) }); }
+    setBusy(false);
   };
 
   return (
@@ -41,7 +49,7 @@ export function AccountPopover(p: Props) {
         <label className="acc-photo" title="Profilbild ändern">
           <input type="file" accept="image/*" aria-label="Profilbild auswählen" onChange={async (e) => {
             const f = e.target.files?.[0];
-            if (f) p.onPhoto(await resizeImage(f));
+            if (f) { try { await p.onPhoto(await resizeImage(f)); } catch (err) { setMsg({ ok: false, text: errorText(err) }); } }
           }} />
           <div className="acc-photo-circle">{p.photo ? <img src={p.photo} alt="Dein Profilbild" /> : p.name[0]}</div>
           <div className="acc-cam" aria-hidden="true"><IconCamera size={15} /></div>
@@ -65,9 +73,10 @@ export function AccountPopover(p: Props) {
       <div className="acc-pw">
         <div>
           <div className="acc-pw-label">MEIN PASSWORT</div>
-          <div className="acc-pw-value">{showPw ? p.password : '••••••••'}</div>
+          <div className="acc-pw-value">{hidden ? '••••••••' : showPw ? p.password : '••••••••'}</div>
+          {hidden && <div className="acc-tip">Sicher gespeichert – niemand kann es lesen.</div>}
         </div>
-        <button type="button" className="btn-soft" aria-pressed={showPw} onClick={() => setShowPw(!showPw)}>{showPw ? 'Verbergen' : 'Anzeigen'}</button>
+        {!hidden && <button type="button" className="btn-soft" aria-pressed={showPw} onClick={() => setShowPw(!showPw)}>{showPw ? 'Verbergen' : 'Anzeigen'}</button>}
       </div>
       {!form ? (
         <button type="button" className="btn-soft" onClick={() => { setForm(true); setMsg(null); }}>Passwort ändern</button>
@@ -79,11 +88,11 @@ export function AccountPopover(p: Props) {
           <div aria-live="assertive">{msg && !msg.ok && <div className="msg-error">{msg.text}</div>}</div>
           <div className="row">
             <button type="button" style={{ background: '#F1ECE7', color: 'var(--brand)' }} onClick={() => { setForm(false); setMsg(null); }}>Abbrechen</button>
-            <button type="button" style={{ background: 'var(--success)', color: '#FFFFFF' }} onClick={save}>Speichern</button>
+            <button type="button" style={{ background: 'var(--success)', color: '#FFFFFF' }} disabled={busy} onClick={save}>{busy ? 'Speichert …' : 'Speichern'}</button>
           </div>
         </div>
       )}
-      <div aria-live="polite">{msg?.ok && <div className="msg-ok">{msg.text}</div>}</div>
+      <div aria-live="polite">{msg?.ok && <div className="msg-ok">{msg.text}</div>}{msg && !msg.ok && !form && <div className="msg-error">{msg.text}</div>}</div>
       <div className="acc-tip">Tipp: Zeig dein Passwort niemandem.</div>
       <button type="button" className="btn-outline" onClick={p.onLogout}>Abmelden</button>
     </Dialog>

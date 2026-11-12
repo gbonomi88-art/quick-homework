@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { act } from '../store/actions';
 import { timeLeftMs, timerPhase } from '../store/rules';
 import type { GameId } from '../store/types';
 import './GameFrame.css';
@@ -25,7 +26,6 @@ export function GameFrame({ game, label, score, extra, warnHint, overText, light
   const session = useStore((s) => s.data.gameSession);
   const maxMinutes = useStore((s) => s.data.settings.maxMinutes);
   const kid = useStore((s) => (s.session?.role === 'kid' ? s.session.studentId : ''));
-  const apply = useStore((s) => s.apply);
   const nav = useNavigate();
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 500); return () => clearInterval(t); }, []);
@@ -49,10 +49,10 @@ export function GameFrame({ game, label, score, extra, warnHint, overText, light
   const warn = phase === 'orange' || phase === 'rot';
   const warnText = phase === 'rot' ? 'weniger als 1 Minute' : `${Math.ceil(left / 60_000)} Minuten`;
 
-  const end = () => { apply((d) => ({ ...d, gameSession: undefined })); nav('/kind'); };
+  const end = () => { act.endGame(); nav('/kind'); };
   const skip = () => {
     const target = left > 300_000 ? 300_000 : left > 60_000 ? 60_000 : left > 5_000 ? 5_000 : 0;
-    apply((d) => (d.gameSession ? { ...d, gameSession: { ...d.gameSession, skippedMs: d.gameSession.skippedMs + (left - target) } } : d));
+    act.skipTime(left - target);
     setNow(Date.now());
   };
 

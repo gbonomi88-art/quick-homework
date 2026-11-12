@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { useStore } from '../../store/useStore';
-import { claimReward, lockReason, startGame, type LockReason } from '../../store/rules';
+import { lockReason, type LockReason } from '../../store/rules';
+import { act, errorText } from '../../store/actions';
 import { TEACHER_TITLE } from '../../store/constants';
 import type { GameId } from '../../store/types';
 import { GAMES } from '../../data/subjects';
@@ -15,14 +15,14 @@ const ART: Record<GameId, string> = { auto: gameAuto, bau: gameBau, huepf: gameH
 export function Belohnung() {
   const { subId } = useParams();
   const { data, student } = useKid();
-  const apply = useStore((s) => s.apply);
   const nav = useNavigate();
   const sub = data.submissions.find((s) => s.id === subId && s.studentId === student.id);
   // Sperre beim Öffnen festhalten (claimReward setzt skipNextGame danach zurück).
   const [reason] = useState<LockReason>(() => lockReason(student));
   const [alreadyUsed] = useState(() => !!sub?.rewardUsed && reason === 'keine');
   const [picked, setPicked] = useState<GameId | null>(null);
-  useEffect(() => { if (sub && reason !== 'keine') apply((d) => claimReward(d, sub.id).data); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [err, setErr] = useState('');
+  useEffect(() => { if (sub && reason !== 'keine') act.claimReward(sub.id).catch(() => undefined); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (!sub) return <Navigate to="/kind" replace />;
 
   const blocked = reason !== 'keine' || alreadyUsed;
@@ -36,10 +36,10 @@ export function Belohnung() {
   };
   const block = reason !== 'keine' ? texts[reason] : alreadyUsed ? texts.used : null;
 
-  const play = () => {
+  const play = async () => {
     if (!picked) return;
-    apply((d) => startGame(d, sub.id, picked, Date.now()));
-    nav(`/kind/spiel/${picked}`);
+    try { await act.startGame(sub.id, picked); nav(`/kind/spiel/${picked}`); }
+    catch (e) { setErr(errorText(e)); }
   };
 
   return (
@@ -77,6 +77,7 @@ export function Belohnung() {
           );
         })}
       </div>
+      <div aria-live="assertive">{err && <div className="msg-error">{err}</div>}</div>
       <div style={{ flexGrow: 1 }} />
       <div className="rew-actions">
         <Link to="/kind" className="rew-later">{blocked ? 'Zur Übersicht' : 'Später spielen'}</Link>

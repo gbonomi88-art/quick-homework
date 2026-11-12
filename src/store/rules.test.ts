@@ -139,3 +139,17 @@ describe('Vorprüfung', () => {
     expect(R.autoCheck({ kind: 'question', question: 'frei' }, 'egal')).toBeUndefined();
   });
 });
+
+describe('Shop-Artikel', () => {
+  it('kauft mit festen Preisen und speichert die Garage', () => {
+    let d = R.shop(createSeed(), 'mattia', 'car:renner');
+    d = R.shop(d, 'mattia', 'tuning:turbo');
+    expect(d.students.find((s) => s.id === 'mattia')!.coins).toBe(100);
+    expect(d.garages.mattia.activeCar).toBe('renner');
+    expect(() => R.shop(d, 'mattia', 'tuning:turbo')).toThrow('Schon eingebaut');
+    expect(() => R.shop(d, 'mattia', 'car:gelaende')).toThrow('Zu wenig Spielgeld');
+    d = R.shop(d, 'mattia', 'drive:flitzer');
+    expect(d.garages.mattia.activeCar).toBe('flitzer');
+    expect(() => R.shop(d, 'mattia', 'car:gratis')).toThrow('Unbekannter Artikel');
+  });
+});

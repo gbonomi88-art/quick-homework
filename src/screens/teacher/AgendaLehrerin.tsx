@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../../store/useStore';
-import { addEvent, deleteEvent, RuleError } from '../../store/rules';
+import { act, errorText } from '../../store/actions';
 import { CLASS_NAME, WEEKDAYS, dateLabel } from '../../store/constants';
 import type { EventType, Weekday, WeekOffset } from '../../store/types';
 import { EVENT_TYPES } from '../../data/subjects';
@@ -10,7 +10,6 @@ import './teacher.css';
 
 export function AgendaLehrerin() {
   const data = useStore((s) => s.data);
-  const apply = useStore((s) => s.apply);
   const [week, setWeek] = useState<WeekOffset>(0);
   const [type, setType] = useState<EventType>('test');
   const [title, setTitle] = useState('');
@@ -19,12 +18,12 @@ export function AgendaLehrerin() {
   const [note, setNote] = useState('');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const save = () => {
+  const save = async () => {
     try {
-      apply((d) => addEvent(d, { weekOffset: week, weekday: day, type, title, time: time || undefined, note }));
+      await act.addEvent({ weekOffset: week, weekday: day, type, title, time: time || undefined, note });
       setMsg({ ok: true, text: `«${title.trim()}» steht jetzt am ${WEEKDAYS[day]}, ${dateLabel(week, day)} in der Agenda.` });
       setTitle(''); setNote('');
-    } catch (e) { if (e instanceof RuleError) setMsg({ ok: false, text: e.message }); else throw e; }
+    } catch (e) { setMsg({ ok: false, text: errorText(e) }); }
   };
 
   return (
@@ -34,7 +33,7 @@ export function AgendaLehrerin() {
         <section className="t-card" style={{ background: 'transparent', padding: 0 }}>
           <AgendaWeek data={data} week={week} onWeek={setWeek} onDelete={(id) => {
             const ev = data.events.find((e) => e.id === id);
-            if (ev && window.confirm(`Termin «${ev.title}» löschen?`)) apply((d) => deleteEvent(d, id));
+            if (ev && window.confirm(`Termin «${ev.title}» löschen?`)) act.deleteEvent(id).catch((e) => setMsg({ ok: false, text: errorText(e) }));
           }} />
           <div className="t-muted">Abgaben kommen automatisch aus den Hausaufgaben und lassen sich hier nicht löschen.</div>
         </section>

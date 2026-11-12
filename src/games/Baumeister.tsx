@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
+import { act } from '../store/actions';
 import { bauHouse, bauTower, bauTree } from '../components/designSvgs';
 import { GameFrame } from './GameFrame';
 import './games.css';
@@ -20,7 +21,6 @@ export function startCity(): string[] {
 /** Platzhalter: 10×6-Raster, Werkzeug wählen und Feld antippen. Die Stadt wird gespeichert. */
 export function Baumeister() {
   const [tool, setTool] = useState<Tool>('house');
-  const apply = useStore((s) => s.apply);
   const city = useStore((s) => (s.session?.role === 'kid' ? s.data.buildCity[s.session.studentId] : undefined)) ?? startCity();
   const count = city.filter((v) => v && v !== 'road').length;
   return (
@@ -42,7 +42,7 @@ export function Baumeister() {
                 onClick={() => {
                   if (over) return;
                   const g = city.slice(); g[i] = tool;
-                  apply((d) => ({ ...d, buildCity: { ...d.buildCity, [studentId]: g } }));
+                  act.saveCity(studentId, g);
                 }}
                 dangerouslySetInnerHTML={ART[v] ? { __html: ART[v] } : undefined} />
             ))}

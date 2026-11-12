@@ -21,7 +21,7 @@
 .anchor { position: relative; }
 
 .dialog-backdrop { position: fixed; inset: 0; border: 0; padding: 0; background: rgba(42,26,26,0.18); cursor: default; z-index: 100; }
-.dialog { position: fixed; z-index: 101; background: #FFFFFF; border-radius: 20px; padding: 20px; box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+.dialog { position: fixed; z-index: 101; background: #FFFFFF; color: var(--text); text-align: left; border-radius: 20px; padding: 20px; box-shadow: 0 16px 40px rgba(0,0,0,0.2);
   display: flex; flex-direction: column; gap: 14px; max-height: calc(100dvh - 100px - var(--safe-top)); overflow: auto; }
 .dialog-close { width: 44px; height: 44px; border: 0; border-radius: 22px; background: transparent; color: var(--text-muted);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -83,3 +83,6 @@
   .pill-accent { width: 44px; padding: 0; justify-content: center; }
   .popover-account, .popover-notif { left: 12px; right: 12px; width: auto; }
 }
+
+.offline-banner { position: fixed; z-index: 950; left: 50%; transform: translateX(-50%); bottom: calc(12px + var(--safe-bottom)); max-width: calc(100% - 32px);
+  background: var(--text); color: #FFFFFF; font-size: 14px; font-weight: 700; padding: 10px 16px; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }

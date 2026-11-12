@@ -222,3 +222,29 @@ export function toggleGame(d: DemoData, g: GameId): DemoData {
 export function setSetting<K extends 'hausiTeacherCanRead' | 'hausiSchoolTopicsOnly' | 'startImage'>(d: DemoData, k: K, v: Settings[K]): DemoData {
   return { ...d, settings: { ...d.settings, [k]: v } };
 }
+
+// ---------- Shop (gleiche Preise wie in supabase/schema.sql) ----------
+export const DEFAULT_GARAGE = { ownedCars: ['flitzer'], activeCar: 'flitzer', color: '#E0352B', tuning: [] as string[] };
+export const SHOP_COLORS = ['#E0352B', '#1F4E8C', '#2F7D4F', '#F2B33D', '#FFFFFF'];
+export const PRICES = { color: 50, felgen: 100, spoiler: 150, turbo: 200, bus: 300, gelaende: 450, renner: 600 } as const;
+
+/** Artikel kaufen: „color:#hex“, „tuning:felgen“, „car:bus“ oder „drive:bus“ (eigenes Auto fahren). */
+export function shop(d: DemoData, studentId: string, item: string): DemoData {
+  const [kind, val] = item.split(':');
+  const g = { ...DEFAULT_GARAGE, ...(d.garages[studentId] ?? {}) };
+  let price: number;
+  let next = g;
+  if (kind === 'color' && SHOP_COLORS.includes(val)) { price = PRICES.color; next = { ...g, color: val }; }
+  else if (kind === 'tuning' && (val === 'felgen' || val === 'spoiler' || val === 'turbo')) {
+    if (g.tuning.includes(val)) throw new RuleError('Schon eingebaut');
+    price = PRICES[val]; next = { ...g, tuning: [...g.tuning, val] };
+  } else if (kind === 'car' && (val === 'bus' || val === 'gelaende' || val === 'renner')) {
+    if (g.ownedCars.includes(val)) throw new RuleError('Gehört dir schon');
+    price = PRICES[val]; next = { ...g, ownedCars: [...g.ownedCars, val], activeCar: val };
+  } else if (kind === 'drive') {
+    if (!g.ownedCars.includes(val)) throw new RuleError('Dieses Auto gehört dir nicht');
+    price = 0; next = { ...g, activeCar: val };
+  } else throw new RuleError('Unbekannter Artikel');
+  const after = buy(d, studentId, price);
+  return { ...after, garages: { ...after.garages, [studentId]: next } };
+}

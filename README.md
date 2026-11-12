@@ -13,8 +13,13 @@ Idee & Design: Mattia (11 Jahre). Showcase-App als PWA (installierbar, offline).
 | Schüler/in | Lina · Noah · Elif · Luca | `Mond2026` · `Wolke17` · `Blitz88` · `Stern55` |
 | Lehrerin | Brunner | `Tafel2026` |
 
-Die Lasche **«Demo»** am linken Rand wechselt direkt die Rolle und setzt die Demo zurück.
-Demo-Heute ist **Dienstag, 17.11.**
+Beim Anmelden wählt man den Modus:
+
+- **Klasse 6c (online):** echte Daten in Supabase, auf allen Geräten gleich. Was die Lehrerin am
+  Laptop verteilt, sieht das Kind auf seinem Tablet (Aktualisierung alle 15 Sekunden). Echtes Datum.
+  Die Lasche **«Online»** am linken Rand: «Klassendaten zurücksetzen» (Lehrerin) und «Zur Demo wechseln».
+- **Demo (nur dieses Gerät):** alles lokal im Browser, Demo-Heute ist **Dienstag, 17.11.**
+  Die Lasche **«Demo»** wechselt direkt die Rolle und setzt die Demo zurück.
 
 ## Auf dem Tablet installieren
 
@@ -34,10 +39,12 @@ Jeder Push auf `main` wird getestet und auf GitHub Pages veröffentlicht.
 
 ## Aufbau
 
-- `src/store/` – Datenmodell, Startdaten, Regeln (`rules.ts`), Hausi (`hausi.ts`) + Tests
+- `src/store/` – Datenmodell, Startdaten, Regeln (`rules.ts`), Aktionen (`actions.ts`: Demo lokal / Klasse über Supabase), Hausi (`hausi.ts`) + Tests
+- `src/backend/` – Supabase-Anbindung · `supabase/` – Schema, Startdaten, SQL-Tests
 - `src/screens/student/`, `src/screens/teacher/` – Screens
 - `src/games/` – jedes Spiel ein eigenes Modul im gemeinsamen Rahmen `GameFrame`
 - `scripts/extract-svgs.mjs` – übernimmt Grafiken aus den Design-Dateien
 
-Alle Daten bleiben im Browser (localStorage). Passwörter sind Demo-Werte; ein echtes
-Produkt braucht Passwort-Hashing und Server-Authentifizierung (geplant: Supabase).
+Demo-Modus: Alle Daten bleiben im Browser (localStorage).
+Klassen-Modus: Supabase Auth (Passwörter gehasht), Spielgeld-Regeln laufen als geprüfte
+Datenbank-Funktionen – siehe [`supabase/README.md`](supabase/README.md).

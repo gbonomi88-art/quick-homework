@@ -19,6 +19,9 @@ import { Torschuss } from './games/Torschuss';
 import { DemoBar } from './components/DemoBar';
 import { UpdatePrompt } from './components/pwa';
 import { useStore } from './store/useStore';
+import { useEffect, useState } from 'react';
+import { refresh, logout } from './store/actions';
+import { RuleError } from './store/rules';
 import './components/ui.css';
 
 function RequireRole({ role, children }: { role: 'kid' | 'teacher'; children: ReactNode }) {
@@ -42,6 +45,29 @@ function Game() {
 const kid = (el: ReactNode) => <RequireRole role="kid">{el}</RequireRole>;
 const teacher = (el: ReactNode) => <RequireRole role="teacher">{el}</RequireRole>;
 
+/** Klassen-Modus: regelmässig und beim Zurückkommen neu laden; offline den letzten Stand zeigen. */
+function ClassSync() {
+  const mode = useStore((s) => s.mode);
+  const session = useStore((s) => s.session);
+  const [offline, setOffline] = useState(!navigator.onLine);
+  useEffect(() => {
+    if (mode !== 'klasse' || !session) return;
+    const run = () => refresh().then(() => setOffline(false), (e) => {
+      if (e instanceof RuleError && /neu an/.test(e.message)) { logout(); return; }
+      setOffline(true);
+    });
+    run();
+    const t = setInterval(() => { if (document.visibilityState === 'visible') run(); }, 15_000);
+    const onVis = () => { if (document.visibilityState === 'visible') run(); };
+    window.addEventListener('online', run);
+    window.addEventListener('offline', () => setOffline(true));
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(t); window.removeEventListener('online', run); document.removeEventListener('visibilitychange', onVis); };
+  }, [mode, session]);
+  if (mode !== 'klasse' || !session || !offline) return null;
+  return <div className="offline-banner" role="status">Keine Verbindung – du siehst den letzten Stand. Entwürfe werden gespeichert, sobald du wieder online bist.</div>;
+}
+
 export default function App() {
   return (
     <HashRouter>
@@ -61,6 +87,7 @@ export default function App() {
         <Route path="/lehrerin/agenda" element={teacher(<AgendaLehrerin />)} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ClassSync />
       <DemoBar />
       <UpdatePrompt />
     </HashRouter>

@@ -1,6 +1,5 @@
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
-import { useStore } from '../../store/useStore';
-import { markSeen } from '../../store/rules';
+import { act } from '../../store/actions';
 import { TEACHER_TITLE } from '../../store/constants';
 import type { Task } from '../../store/types';
 import { SUBJECTS } from '../../data/subjects';
@@ -22,7 +21,6 @@ function Line({ task, answer, ok }: { task: Task; answer: string; ok: boolean })
 export function Korrektur() {
   const { id } = useParams();
   const { data, student } = useKid();
-  const apply = useStore((s) => s.apply);
   const nav = useNavigate();
   const hw = data.homeworks.find((h) => h.id === id);
   const sub = data.submissions.find((s) => s.homeworkId === id && s.studentId === student.id);
@@ -78,7 +76,7 @@ export function Korrektur() {
           </div>
           <div style={{ flexGrow: 1 }} />
           <Link to={`/kind/aufgabe/${hw.id}?chat=1`} className="kor-btn hausi"><HausiHead size={26} /> Mit Hausi üben</Link>
-          <button type="button" className="kor-btn ok" onClick={() => { apply((d) => markSeen(d, sub.id)); nav('/kind'); }}>Verstanden</button>
+          <button type="button" className="kor-btn ok" onClick={() => { act.markSeen(sub.id); nav('/kind'); }}>Verstanden</button>
         </aside>
       </main>
     </div>

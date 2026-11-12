@@ -13,3 +13,6 @@
 .demobar-panel button[aria-pressed='true'] { border-color: var(--brand); background: #F1ECE7; }
 .demobar-panel button.danger { color: var(--danger-dark); border-color: #F0C9C4; }
 .demobar-backdrop { position: fixed; inset: -50vh -100vw; border: 0; padding: 0; background: transparent; cursor: default; z-index: 1; }
+
+.demobar-toggle.online { border-color: var(--success); background: #DCEFE2; color: #1E5E37; }
+.demobar-panel.online::before { content: 'Klasse 6c · online'; color: #1E5E37; }

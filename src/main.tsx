@@ -8,7 +8,8 @@ import '@fontsource/nunito/900.css';
 import './theme/global.css';
 import App from './App';
 import { applySessionPolicy } from './store/useStore';
+import { signOut } from './backend/supabase';
 
-applySessionPolicy();
+applySessionPolicy(() => { signOut(); });
 
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);

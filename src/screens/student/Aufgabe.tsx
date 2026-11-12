@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { saveDraft, submitHomework } from '../../store/rules';
+import { act, errorText } from '../../store/actions';
 import { WEEKDAYS } from '../../store/constants';
 import { SUBJECTS, TASK_COLORS } from '../../data/subjects';
 import { SubHeader } from '../../components/StudentHeader';
@@ -16,7 +16,6 @@ export function Aufgabe() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const { data, student } = useKid();
-  const apply = useStore((s) => s.apply);
   const nav = useNavigate();
   const wide = useMedia('(min-width: 900px)');
   const [chat, setChat] = useState<boolean>(() => params.get('chat') === '1' || window.matchMedia('(min-width: 900px)').matches);
@@ -37,13 +36,15 @@ export function Aufgabe() {
 
   const setAnswer = (i: number, v: string) => {
     const next = answers.slice(); next[i] = v;
-    apply((d) => saveDraft(d, sub.id, next));
+    act.saveDraft(sub.id, next);
     setError('');
   };
-  const submit = () => {
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
     if (!all) { setError('Fülle zuerst alle Aufgaben aus. Dann kannst du abgeben.'); return; }
-    apply((d) => submitHomework(d, sub.id, answers));
-    nav(`/kind/belohnung/${sub.id}`);
+    setBusy(true);
+    try { await act.submit(sub.id, answers); nav(`/kind/belohnung/${sub.id}`); }
+    catch (e) { setError(errorText(e)); setBusy(false); }
   };
 
   return (
@@ -106,7 +107,7 @@ export function Aufgabe() {
               </div>
               <div className="auf-submit-wrap">
                 <div aria-live="assertive" className={error ? 'msg-error' : 'sr-only'}>{error}</div>
-                <button type="button" className={`auf-submit${all ? ' ready' : ''}`} aria-disabled={!all} onClick={submit}>
+                <button type="button" className={`auf-submit${all ? ' ready' : ''}`} aria-disabled={!all || busy} disabled={busy} onClick={submit}>
                   <IconCheck size={22} /> Abgeben
                 </button>
               </div>

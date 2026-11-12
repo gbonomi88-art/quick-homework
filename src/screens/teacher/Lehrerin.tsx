@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
-import { changeCoinsPerSubmission, markNotDone, setMaxMinutes, setSetting, toggleGame, RuleError } from '../../store/rules';
+import { act, errorText } from '../../store/actions';
 import { WEEKDAYS } from '../../store/constants';
 import type { GameId, Homework } from '../../store/types';
 import { GAMES, SUBJECTS } from '../../data/subjects';
@@ -27,7 +27,6 @@ const kindText = (h: Homework) => {
 
 export function Lehrerin() {
   const data = useStore((s) => s.data);
-  const apply = useStore((s) => s.apply);
   const location = useLocation();
   const flash = (location.state as { flash?: string } | null)?.flash;
   const current = data.homeworks.filter((h) => h.dueWeekOffset >= 0).sort((a, b) => a.dueWeekOffset - b.dueWeekOffset || a.dueWeekday - b.dueWeekday);
@@ -41,8 +40,9 @@ export function Lehrerin() {
   const kids = [...data.students].sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const done = subs.filter((x) => x.status === 'abgegeben' || x.status === 'korrigiert').length;
 
-  const safe = (fn: Parameters<typeof apply>[0]) => {
-    try { setErr(''); apply((d) => fn(d)); } catch (e) { if (e instanceof RuleError) setErr(e.message); else throw e; }
+  const safe = async (fn: () => Promise<void>) => {
+    setErr('');
+    try { await fn(); } catch (e) { setErr(errorText(e)); }
   };
 
   const hwCard = (h: Homework) => {
@@ -68,6 +68,7 @@ export function Lehrerin() {
       <TeacherHeader />
       <main className="t-dash">
         {flash && <div className="msg-ok t-flash" role="status">{flash}</div>}
+        {err && <div className="msg-error t-flash" role="alert">{err}</div>}
         <section className="t-card t-col-hw" aria-labelledby="t-hw-h">
           <h2 id="t-hw-h">Hausaufgaben</h2>
           <div className="t-muted">Diese Woche verteilt</div>
@@ -86,7 +87,6 @@ export function Lehrerin() {
             {sel && <span className="t-subs-hw" style={{ background: SUBJECTS[sel.subject].light, color: SUBJECTS[sel.subject].text }}>{SUBJECTS[sel.subject].label} · {sel.title}</span>}
           </div>
           <div className="t-muted">{done} von {kids.length} Kindern haben abgegeben</div>
-          <div aria-live="polite">{err && <div className="msg-error">{err}</div>}</div>
           <ul className="t-kids">
             {kids.map((k) => {
               const sub = subs.find((x) => x.studentId === k.id);
@@ -115,7 +115,7 @@ export function Lehrerin() {
                     {sub?.status === 'korrigiert' && <span className="t-note">{sub.grading?.every(Boolean) ? `Fehlerfrei +${sub.reward}` : `+${sub.reward} Spielgeld`}</span>}
                     {sub?.status === 'offen' && (
                       <button type="button" className="t-act danger" onClick={() => {
-                        if (window.confirm(`${k.name}: Hausaufgabe als «nicht gemacht» markieren? Das nächste Spiel wird gestrichen.`)) safe((d) => markNotDone(d, sub.id));
+                        if (window.confirm(`${k.name}: Hausaufgabe als «nicht gemacht» markieren? Das nächste Spiel wird gestrichen.`)) safe(() => act.markNotDone(sub.id));
                       }}>Nicht gemacht</button>
                     )}
                     {k.skipNextGame && <span className="t-flag">Nächstes Mal kein Spiel</span>}
@@ -136,32 +136,32 @@ export function Lehrerin() {
           <div className="t-label">Spielgeld pro Abgabe <span>(in 10er-Schritten)</span></div>
           <div className="t-stepper-row">
             <div role="group" aria-label="Spielgeld pro Abgabe" className="t-stepper">
-              <button type="button" aria-label="10 Spielgeld weniger" disabled={s.coinsPerSubmission <= 0} onClick={() => safe((d) => changeCoinsPerSubmission(d, -10))}>−10</button>
+              <button type="button" aria-label="10 Spielgeld weniger" disabled={s.coinsPerSubmission <= 0} onClick={() => safe(() => act.coins(-10))}>−10</button>
               <output aria-live="polite">{s.coinsPerSubmission}</output>
-              <button type="button" aria-label="10 Spielgeld mehr" onClick={() => safe((d) => changeCoinsPerSubmission(d, 10))}>+10</button>
+              <button type="button" aria-label="10 Spielgeld mehr" onClick={() => safe(() => act.coins(10))}>+10</button>
             </div>
             <span className="t-muted">Fehlerfrei: <b>{s.coinsPerSubmission * 2}</b></span>
           </div>
           <div className="t-label">Erlaubte Spiele</div>
           <div className="t-checks two">
             {(Object.keys(GAMES) as GameId[]).map((g) => (
-              <label key={g}><input type="checkbox" checked={s.allowedGames.includes(g)} onChange={() => safe((d) => toggleGame(d, g))} />{GAMES[g].name}</label>
+              <label key={g}><input type="checkbox" checked={s.allowedGames.includes(g)} onChange={() => safe(() => act.toggleGame(g))} />{GAMES[g].name}</label>
             ))}
           </div>
           <label htmlFor="zeit" className="t-label t-label-row">Spielzeit pro Abgabe <span className="t-badge">{s.maxMinutes} Min.</span></label>
-          <input id="zeit" type="range" min={5} max={30} step={5} value={s.maxMinutes} onChange={(e) => safe((d) => setMaxMinutes(d, Number(e.target.value)))} className="t-range" />
+          <input id="zeit" type="range" min={5} max={30} step={5} value={s.maxMinutes} onChange={(e) => safe(() => act.maxMinutes(Number(e.target.value)))} className="t-range" />
           <div className="t-muted small">Höchstens 30 Minuten · 1 Spiel pro Abgabe</div>
           <div className="t-label">Hausi-Chat (Sicherheit)</div>
           <div className="t-checks">
             <label><input type="checkbox" checked disabled />Hausi verrät nie Lösungen (immer an)</label>
-            <label><input type="checkbox" checked={s.hausiTeacherCanRead} onChange={(e) => safe((d) => setSetting(d, 'hausiTeacherCanRead', e.target.checked))} />Ich kann die Fragen an Hausi lesen</label>
-            <label><input type="checkbox" checked={s.hausiSchoolTopicsOnly} onChange={(e) => safe((d) => setSetting(d, 'hausiSchoolTopicsOnly', e.target.checked))} />Hausi nur zu Schulthemen</label>
+            <label><input type="checkbox" checked={s.hausiTeacherCanRead} onChange={(e) => safe(() => act.hausi('hausiTeacherCanRead', e.target.checked))} />Ich kann die Fragen an Hausi lesen</label>
+            <label><input type="checkbox" checked={s.hausiSchoolTopicsOnly} onChange={(e) => safe(() => act.hausi('hausiSchoolTopicsOnly', e.target.checked))} />Hausi nur zu Schulthemen</label>
           </div>
           <div className="t-label">Startseite gestalten</div>
           <div className="t-upload">
             <input id="startbild" type="file" accept="image/*" className="sr-only" onChange={async (e) => {
               const f = e.target.files?.[0];
-              if (f) { const url = await resizeImage(f, 1024); safe((d) => setSetting(d, 'startImage', url)); }
+              if (f) { const url = await resizeImage(f, 1024); safe(() => act.startImage(url)); }
               e.target.value = '';
             }} />
             {s.startImage ? (
@@ -170,7 +170,7 @@ export function Lehrerin() {
                 <div className="t-upload-row">
                   <span className="t-ok">Ist jetzt auf der Startseite</span>
                   <label htmlFor="startbild" className="t-link">Ändern</label>
-                  <button type="button" className="t-link" onClick={() => safe((d) => setSetting(d, 'startImage', undefined))}>Entfernen</button>
+                  <button type="button" className="t-link" onClick={() => safe(() => act.startImage(undefined))}>Entfernen</button>
                 </div>
               </>
             ) : (

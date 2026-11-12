@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
+import { act, logout as doLogout } from '../store/actions';
 import { reminders } from '../store/selectors';
 import { CLASS_NAME } from '../store/constants';
 import { AccountPopover } from './AccountPopover';
@@ -16,16 +17,12 @@ const NOTIF_STYLE = {
 /** Header der Kinder-Übersicht: Hausi fragen, Glocke, Konto. */
 export function StudentHeader({ studentId }: { studentId: string }) {
   const data = useStore((s) => s.data);
-  const apply = useStore((s) => s.apply);
-  const logout = useStore((s) => s.logout);
   const nav = useNavigate();
   const [open, setOpen] = useState<'menu' | 'notif' | null>(null);
   const student = data.students.find((s) => s.id === studentId)!;
   const list = reminders(data, studentId);
   const firstOpen = data.submissions.find((s) => s.studentId === studentId && s.status === 'offen' &&
     data.homeworks.find((h) => h.id === s.homeworkId)?.dueWeekOffset === 0);
-  const upd = (patch: Partial<typeof student>) =>
-    apply((d) => ({ ...d, students: d.students.map((s) => (s.id === studentId ? { ...s, ...patch } : s)) }));
 
   return (
     <header className="app-header">
@@ -45,8 +42,9 @@ export function StudentHeader({ studentId }: { studentId: string }) {
       </div>
       {open === 'menu' && (
         <AccountPopover name={student.name} subtitle={`Klasse ${CLASS_NAME}`} photo={student.photo} password={student.password} coins={student.coins}
-          onPhoto={(photo) => upd({ photo })} onChangePassword={(password) => upd({ password })}
-          onLogout={() => { logout(); nav('/'); }} onClose={() => setOpen(null)} />
+          onPhoto={(photo) => act.setPhoto({ role: 'kid', id: studentId }, photo)}
+          onChangePassword={(o, n) => act.changePassword({ role: 'kid', id: studentId }, o, n)}
+          onLogout={() => { doLogout(); nav('/'); }} onClose={() => setOpen(null)} />
       )}
       {open === 'notif' && (
         <Dialog label="Erinnerungen" onClose={() => setOpen(null)} className="popover-notif" backdropLabel="Erinnerungen schliessen">

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useStore } from '../../store/useStore';
-import { buy } from '../../store/rules';
-import type { DemoData, Garage } from '../../store/types';
+import { DEFAULT_GARAGE as GARAGE0, PRICES } from '../../store/rules';
+import { act, errorText } from '../../store/actions';
+import type { Garage } from '../../store/types';
 import { Coin, IconBack } from '../../components/icons';
 import { useKid } from './useKid';
 import './Shop.css';
 
-export const DEFAULT_GARAGE: Garage = { ownedCars: ['flitzer'], activeCar: 'flitzer', color: '#E0352B', tuning: [] };
+export const DEFAULT_GARAGE: Garage = GARAGE0;
 
 const SHAPES: Record<string, { name: string; body: string; win: string }> = {
   flitzer: { name: 'Stadtflitzer', body: 'M30 70 L36 57 Q50 51 72 49 L90 39 Q102 34 118 36 L138 47 Q158 49 164 58 L166 70 Z', win: 'M78 49 L93 41 Q102 38 114 40 L126 48 Z' },
@@ -16,15 +16,15 @@ const SHAPES: Record<string, { name: string; body: string; win: string }> = {
   bus: { name: 'Mini-Bus', body: 'M26 70 L26 34 Q26 28 32 28 L150 28 Q162 28 166 40 L172 56 L172 70 Z', win: 'M36 34 L150 34 L160 46 L36 46 Z' },
 };
 const TUNING = [
-  { id: 'felgen', name: 'Goldene Felgen', desc: 'Glänzende Räder', price: 100 },
-  { id: 'spoiler', name: 'Spoiler', desc: 'Sieht schnell aus', price: 150 },
-  { id: 'turbo', name: 'Turbo', desc: 'Schneller beschleunigen', price: 200 },
+  { id: 'felgen', name: 'Goldene Felgen', desc: 'Glänzende Räder', price: PRICES.felgen },
+  { id: 'spoiler', name: 'Spoiler', desc: 'Sieht schnell aus', price: PRICES.spoiler },
+  { id: 'turbo', name: 'Turbo', desc: 'Schneller beschleunigen', price: PRICES.turbo },
 ];
 const CARS = [
   { id: 'flitzer', price: 0, desc: 'Dein erstes Auto', dot: '#E0352B' },
-  { id: 'bus', price: 300, desc: 'Platz für alle deine Freunde', dot: '#1F4E8C' },
-  { id: 'gelaende', price: 450, desc: 'Fährt auch über Stock und Stein', dot: '#2F7D4F' },
-  { id: 'renner', price: 600, desc: 'Flach, schnell und laut', dot: '#F2B33D' },
+  { id: 'bus', price: PRICES.bus, desc: 'Platz für alle deine Freunde', dot: '#1F4E8C' },
+  { id: 'gelaende', price: PRICES.gelaende, desc: 'Fährt auch über Stock und Stein', dot: '#2F7D4F' },
+  { id: 'renner', price: PRICES.renner, desc: 'Flach, schnell und laut', dot: '#F2B33D' },
 ];
 const COLORS: [string, string][] = [['#E0352B', 'Rot'], ['#1F4E8C', 'Blau'], ['#2F7D4F', 'Grün'], ['#F2B33D', 'Gelb'], ['#FFFFFF', 'Weiss']];
 
@@ -46,22 +46,18 @@ export function CarPreview({ g, width = 438 }: { g: Garage; width?: number }) {
 
 export function Shop() {
   const { data, student } = useKid();
-  const apply = useStore((s) => s.apply);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const g = data.garages[student.id] ?? DEFAULT_GARAGE;
   const money = student.coins;
   const inGame = data.gameSession?.game === 'auto';
 
-  const spend = (price: number, change: Partial<Garage>, okText: string) => {
+  const spend = async (price: number, item: string, okText: string) => {
     if (money < price) {
       setMsg({ ok: false, text: `Zu wenig Spielgeld. Du brauchst noch ${price - Math.max(0, money)}. Mach eine Hausaufgabe!` });
       return;
     }
-    apply((d: DemoData) => {
-      const next = buy(d, student.id, price);
-      return { ...next, garages: { ...next.garages, [student.id]: { ...(next.garages[student.id] ?? DEFAULT_GARAGE), ...change } } };
-    });
-    setMsg({ ok: true, text: okText });
+    try { await act.shop(student.id, item); setMsg({ ok: true, text: okText }); }
+    catch (e) { setMsg({ ok: false, text: errorText(e) }); }
   };
   const btnClass = (enabled: boolean, owned: boolean) => `shop-btn${owned ? ' owned' : enabled ? '' : ' poor'}`;
 
@@ -80,11 +76,11 @@ export function Shop() {
             <div className="shop-car-name">{SHAPES[g.activeCar].name}</div>
           </div>
           <div className="shop-card">
-            <div className="shop-card-title">Farbe ändern <span>· 50 Spielgeld</span></div>
+            <div className="shop-card-title">Farbe ändern <span>· {PRICES.color} Spielgeld</span></div>
             <div role="group" aria-label="Autofarbe" className="shop-colors">
               {COLORS.map(([c, label]) => (
                 <button key={c} type="button" aria-label={label} aria-pressed={g.color === c} style={{ background: c }}
-                  onClick={() => { if (g.color !== c) spend(50, { color: c }, `Neue Farbe: ${label}!`); }} />
+                  onClick={() => { if (g.color !== c) spend(PRICES.color, `color:${c}`, `Neue Farbe: ${label}!`); }} />
               ))}
             </div>
           </div>
@@ -99,7 +95,7 @@ export function Shop() {
                 <div key={t.id} className="shop-row">
                   <div className="shop-row-text"><div className="shop-row-name">{t.name}</div><div className="shop-row-desc">{t.desc}</div></div>
                   <button type="button" className={btnClass(money >= t.price, owned)} disabled={owned}
-                    onClick={() => spend(t.price, { tuning: [...g.tuning, t.id] }, `${t.name} eingebaut!`)}>
+                    onClick={() => spend(t.price, `tuning:${t.id}`, `${t.name} eingebaut!`)}>
                     {owned ? 'Eingebaut' : `${t.price} kaufen`}
                   </button>
                 </div>
@@ -120,8 +116,8 @@ export function Shop() {
                   </div>
                   <button type="button" className={btnClass(owned || money >= c.price, active)} disabled={active}
                     onClick={() => {
-                      if (owned) { apply((d) => ({ ...d, garages: { ...d.garages, [student.id]: { ...g, activeCar: c.id } } })); setMsg(null); }
-                      else spend(c.price, { ownedCars: [...g.ownedCars, c.id], activeCar: c.id }, `${SHAPES[c.id].name} gekauft!`);
+                      if (owned) { act.shop(student.id, `drive:${c.id}`).then(() => setMsg(null), (e) => setMsg({ ok: false, text: errorText(e) })); }
+                      else spend(c.price, `car:${c.id}`, `${SHAPES[c.id].name} gekauft!`);
                     }}>
                     {active ? 'Ausgewählt' : owned ? 'Fahren' : `${c.price} kaufen`}
                   </button>

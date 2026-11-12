@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useStore } from '../store/useStore';
+import { act } from '../store/actions';
 import { greeting, reply, type HausiIntent } from '../store/hausi';
 import { TEACHER_TITLE } from '../store/constants';
 import type { ChatMessage, Homework, Student } from '../store/types';
@@ -14,7 +15,6 @@ export function HausiChat({ hw, student, focus, onClose }: Props) {
   const key = `${student.id}:${hw.id}`;
   const settings = useStore((s) => s.data.settings);
   const stored = useStore((s) => s.data.chats[key]);
-  const apply = useStore((s) => s.apply);
   const [text, setText] = useState('');
   const listRef = useRef<HTMLDivElement>(null);
   const lang = SUBJECTS[hw.subject].lang;
@@ -23,8 +23,7 @@ export function HausiChat({ hw, student, focus, onClose }: Props) {
 
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, [messages.length]);
 
-  const push = (msgs: ChatMessage[]) =>
-    apply((d) => ({ ...d, chats: { ...d.chats, [key]: [...(d.chats[key] ?? [{ from: 'hausi', text: greeting(hw, lang) }]), ...msgs] } }));
+  const push = (msgs: ChatMessage[]) => { act.chat(student.id, hw.id, msgs, { from: 'hausi', text: greeting(hw, lang) }); };
 
   const ask = (intent: HausiIntent, kidText: string) => {
     const tipRound = messages.filter((m) => m.from === 'kid' && m.text === 'Gib mir einen Tipp').length;

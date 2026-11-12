@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
+import { act, logout as doLogout } from '../../store/actions';
 import { CLASS_NAME, TEACHER_TITLE } from '../../store/constants';
 import { AccountPopover } from '../../components/AccountPopover';
 import { IconBack, IconCalendar } from '../../components/icons';
@@ -14,11 +15,8 @@ const IconUsers = () => (
 /** Header Dashboard: Schüler verwalten, Agenda, Klasse, Konto. */
 export function TeacherHeader() {
   const teacher = useStore((s) => s.data.teacher);
-  const apply = useStore((s) => s.apply);
-  const logout = useStore((s) => s.logout);
   const nav = useNavigate();
   const [menu, setMenu] = useState(false);
-  const upd = (patch: Partial<typeof teacher>) => apply((d) => ({ ...d, teacher: { ...d.teacher, ...patch } }));
   return (
     <header className="app-header t-header">
       <div className="app-title">Quick Homework <span className="t-role">· Lehrerin</span></div>
@@ -33,8 +31,9 @@ export function TeacherHeader() {
       </nav>
       {menu && (
         <AccountPopover name={TEACHER_TITLE} subtitle={`Lehrerin · Klasse ${CLASS_NAME}`} photo={teacher.photo} password={teacher.password}
-          onPhoto={(photo) => upd({ photo })} onChangePassword={(password) => upd({ password })}
-          onLogout={() => { logout(); nav('/'); }} onClose={() => setMenu(false)} />
+          onPhoto={(photo) => act.setPhoto({ role: 'teacher' }, photo)}
+          onChangePassword={(o, n) => act.changePassword({ role: 'teacher' }, o, n)}
+          onLogout={() => { doLogout(); nav('/'); }} onClose={() => setMenu(false)} />
       )}
     </header>
   );
