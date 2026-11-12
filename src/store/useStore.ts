@@ -30,8 +30,7 @@ export const useStore = create<StoreState>()(
     {
       name: 'quick-homework-demo',
       version: 1,
-      // Sitzung nur behalten, wenn „Passwort auf diesem Gerät merken“ gewählt ist.
-      partialize: (st) => ({ data: st.data, rememberSession: st.rememberSession, session: st.rememberSession ? st.session : null }),
+      partialize: (st) => ({ data: st.data, rememberSession: st.rememberSession, session: st.session }),
     },
   ),
 );
@@ -44,4 +43,17 @@ export function checkLogin(data: DemoData, role: 'kid' | 'teacher', name: string
   }
   const s = data.students.find((x) => x.name.toLowerCase() === n);
   return s && s.password === password ? { role: 'kid', studentId: s.id } : null;
+}
+
+/**
+ * Neuladen im selben Tab bleibt angemeldet (Timer, Entwürfe).
+ * Ein neuer Start (neuer Tab, App neu geöffnet) meldet ab – ausser „Passwort auf diesem Gerät merken“ war aktiv.
+ */
+export function applySessionPolicy() {
+  try {
+    if (!sessionStorage.getItem('qh-tab')) {
+      if (!useStore.getState().rememberSession) useStore.setState({ session: null });
+      sessionStorage.setItem('qh-tab', '1');
+    }
+  } catch { /* Speicher blockiert: nichts tun */ }
 }

@@ -1,0 +1,30 @@
+.shop-header { background: #1E2A44; }
+.shop-money { height: 46px; padding: 0 16px; border-radius: 23px; background: rgba(255,255,255,0.12); font-weight: 900; font-size: 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.shop { flex-grow: 1; display: flex; gap: 22px; padding: 22px calc(32px + var(--safe-right)) calc(22px + var(--safe-bottom)) calc(32px + var(--safe-left)); max-width: 1440px; width: 100%; margin: 0 auto; }
+.shop-left { width: 470px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
+.shop-right { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.shop-car { background: #2E3B5C; border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 8px; color: #FFFFFF; }
+.shop-car-label { font-size: 14px; font-weight: 900; letter-spacing: 1px; }
+.shop-car-name { font-size: 20px; font-weight: 900; }
+.shop-card { background: #FFFFFF; border-radius: 22px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.shop-card-title { font-size: 15px; font-weight: 900; }
+.shop-card-title.big { font-size: 17px; }
+.shop-card-title span { font-weight: 700; color: var(--text-muted); }
+.shop-colors { display: flex; gap: 10px; flex-wrap: wrap; }
+.shop-colors button { width: 44px; height: 44px; border-radius: 22px; border: 3px solid var(--border); }
+.shop-colors button[aria-pressed='true'] { border-color: var(--text); box-shadow: 0 0 0 3px var(--accent); }
+.shop-note { background: var(--reward-bg); border-radius: 16px; padding: 12px 16px; font-size: 14px; line-height: 1.45; color: #5C3F00; }
+.shop-row { display: flex; align-items: center; gap: 12px; padding: 5px 0; border-top: 1px solid #EEE6DF; }
+.shop-row-text { flex-grow: 1; min-width: 0; }
+.shop-row-name { font-size: 16px; font-weight: 800; }
+.shop-row-desc { font-size: 13px; color: var(--text-muted); }
+.shop-dot { width: 18px; height: 18px; border-radius: 9px; flex-shrink: 0; }
+.shop-btn { min-height: 44px; min-width: 120px; padding: 0 14px; border-radius: 12px; font-size: 15px; font-weight: 900; white-space: nowrap; border: 0; background: var(--brand); color: #FFFFFF; }
+.shop-btn.poor { background: #E9E1DA; color: #6B5A55; }
+.shop-btn.owned { background: #DCEFE2; color: #1E5E37; cursor: default; }
+.shop-msg { border-radius: 14px; padding: 12px 16px; font-size: 15px; }
+@media (max-width: 899px) {
+  .shop { flex-direction: column; padding: 16px 16px calc(80px + var(--safe-bottom)); }
+  .shop-left { width: 100%; }
+  .shop-header .header-center { display: none; }
+}

@@ -1,0 +1,24 @@
+// Einmalig: zieht SVG-Grafiken aus den Design-Dateien in ein TS-Modul.
+import { readFileSync, writeFileSync } from 'node:fs';
+const dir = process.argv[2];
+const read = (f) => readFileSync(`${dir}/${f}.dc.html`, 'utf8');
+const svgs = (f) => [...read(f).matchAll(/<svg[\s\S]*?<\/svg>/g)].map((m) => m[0]);
+const clean = (s) => s.replace(/\s(role|aria-label|aria-hidden)="[^"]*"/g, '').replace(/\sstyle="[^"]*"/, '').replace(/<svg /, '<svg aria-hidden="true" ');
+const out = {};
+const b = svgs('Belohnung');
+const find = (list, needle) => list.find((s) => s.includes(needle));
+out.gameAuto = find(b, 'Sportauto');
+const after = b.slice(b.indexOf(out.gameAuto) + 1);
+[out.gameBau, out.gameHuepf, out.gameTor] = after.slice(0, 3);
+out.hausiBig = find(svgs('Aufgabe'), 'Hausi, ein freundlicher Roboter');
+out.hausiWave = find(svgs('Uebersicht'), 'Hausi winkt');
+const sp = svgs('Spiel'); out.autoScene = find(sp, 'Auto-Welt: ein rotes');
+const hu = svgs('SpielHuepf'); out.huepfScene = hu.find((x) => x.includes('width="1100"')); out.huepfHero = find(hu, 'Der Hüpf-Held');
+const to = svgs('SpielTor'); out.torScene = find(to, 'Fussballfeld'); out.torKeeper = to.find((x) => x.includes('width="110" height="160"'));
+out.torBall = to.find((x) => x.includes('width="64" height="64"') && x.includes('r="10.5"'));
+const bau = svgs('SpielBau').filter((x) => x.includes('width="80%"')); [out.bauHouse, out.bauTree, out.bauTower] = bau;
+for (const k of Object.keys(out)) if (!out[k]) throw new Error('missing ' + k);
+let ts = '/* Automatisch aus design/*.dc.html übernommen (scripts/extract-svgs.mjs). */\n';
+for (const [k, v] of Object.entries(out)) ts += `export const ${k} = ${JSON.stringify(clean(v).replace(/\s+/g, ' '))};\n`;
+writeFileSync('src/components/designSvgs.ts', ts);
+console.log(Object.entries(out).map(([k, v]) => k + ':' + v.length).join(' '));

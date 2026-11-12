@@ -1,10 +1,21 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { Login } from './screens/Login';
 import { Placeholder } from './screens/Placeholder';
+import { Uebersicht } from './screens/student/Uebersicht';
+import { Aufgabe } from './screens/student/Aufgabe';
+import { Belohnung } from './screens/student/Belohnung';
+import { Korrektur } from './screens/student/Korrektur';
+import { Agenda } from './screens/student/Agenda';
+import { Shop } from './screens/student/Shop';
+import { AutoWelt } from './games/AutoWelt';
+import { Baumeister } from './games/Baumeister';
+import { HuepfHeld } from './games/HuepfHeld';
+import { Torschuss } from './games/Torschuss';
 import { DemoBar } from './components/DemoBar';
 import { UpdatePrompt } from './components/pwa';
 import { useStore } from './store/useStore';
+import './components/ui.css';
 
 function RequireRole({ role, children }: { role: 'kid' | 'teacher'; children: ReactNode }) {
   const session = useStore((s) => s.session);
@@ -12,12 +23,32 @@ function RequireRole({ role, children }: { role: 'kid' | 'teacher'; children: Re
   return <>{children}</>;
 }
 
+/** Jedes Spiel ist ein eigenes Modul mit gleichem Rahmen (games/GameFrame). */
+function Game() {
+  const { game } = useParams();
+  switch (game) {
+    case 'auto': return <AutoWelt />;
+    case 'bau': return <Baumeister />;
+    case 'huepf': return <HuepfHeld />;
+    case 'tor': return <Torschuss />;
+    default: return <Navigate to="/kind" replace />;
+  }
+}
+
+const kid = (el: ReactNode) => <RequireRole role="kid">{el}</RequireRole>;
+
 export default function App() {
   return (
     <HashRouter>
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route path="/kind/*" element={<RequireRole role="kid"><Placeholder title="Hallo Mattia!" /></RequireRole>} />
+        <Route path="/kind" element={kid(<Uebersicht />)} />
+        <Route path="/kind/aufgabe/:id" element={kid(<Aufgabe />)} />
+        <Route path="/kind/belohnung/:subId" element={kid(<Belohnung />)} />
+        <Route path="/kind/spiel/:game" element={kid(<Game />)} />
+        <Route path="/kind/shop" element={kid(<Shop />)} />
+        <Route path="/kind/korrektur/:id" element={kid(<Korrektur />)} />
+        <Route path="/kind/agenda" element={kid(<Agenda />)} />
         <Route path="/lehrerin/*" element={<RequireRole role="teacher"><Placeholder title="Lehrerin-Bereich" /></RequireRole>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

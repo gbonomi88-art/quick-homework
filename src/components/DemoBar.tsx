@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import './DemoBar.css';
 
@@ -10,8 +10,11 @@ export function DemoBar() {
   const login = useStore((s) => s.login);
   const reset = useStore((s) => s.resetDemo);
   const nav = useNavigate();
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/kind/spiel/')) return null;
   return (
     <div className="demobar">
+      {open && <button type="button" className="demobar-backdrop" aria-label="Demo-Menü schliessen" tabIndex={-1} onClick={() => setOpen(false)} />}
       {open && (
         <div className="demobar-panel" role="group" aria-label="Demo-Steuerung">
           <button type="button" aria-pressed={session?.role === 'kid'} onClick={() => { login({ role: 'kid', studentId: 'mattia' }, false); nav('/kind'); setOpen(false); }}>
@@ -27,8 +30,8 @@ export function DemoBar() {
           </button>
         </div>
       )}
-      <button type="button" className="demobar-toggle" aria-expanded={open} onClick={() => setOpen(!open)}>
-        Demo: Rolle wechseln
+      <button type="button" className="demobar-toggle" aria-expanded={open} aria-label="Demo: Rolle wechseln" onClick={() => setOpen(!open)}>
+        <span aria-hidden="true">Demo</span>
       </button>
     </div>
   );

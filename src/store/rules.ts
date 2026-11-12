@@ -137,3 +137,15 @@ export function autoCheck(task: Task, answer: string): boolean | undefined {
   if (task.sampleSolution) return norm(answer).includes(norm(task.sampleSolution));
   return undefined; // freie Antwort: Lehrerin entscheidet
 }
+
+/** Entwurf speichern (nur solange offen). */
+export function saveDraft(d: DemoData, submissionId: string, answers: string[]): DemoData {
+  const sub = findSub(d, submissionId);
+  if (sub.status !== 'offen') return d;
+  return mapSub(d, submissionId, (s) => ({ ...s, answers }));
+}
+
+/** Kind hat die Korrektur angesehen („Verstanden“). */
+export function markSeen(d: DemoData, submissionId: string): DemoData {
+  return mapSub(d, submissionId, (s) => ({ ...s, seenByStudent: true }));
+}
