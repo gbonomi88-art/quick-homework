@@ -1,0 +1,14 @@
+:root {
+  --brand: #4A2424; --brand-dark: #2E1414; --accent: #F2B33D;
+  --bg: #F5F1EC; --bg-grid: #F7F3EE; --grid-line: #E6DDD4;
+  --card: #FFFFFF; --text: #2A1A1A; --text-muted: #5E4C47; --border: #D9CFC8;
+  --success: #2F7D4F; --danger: #C8372D; --danger-dark: #9B2A22;
+  --reward-bg: #FFF4D6; --reward-text: #7A5300;
+  --nmg: #2F7D4F; --nmg-light: #DCEFE2; --nmg-text: #1E5E37;
+  --mathe: #1F4E8C; --mathe-light: #DDE7F7; --mathe-text: #1F4E8C;
+  --deutsch: #B5541B; --deutsch-light: #FCEDE1; --deutsch-text: #8A3C0E;
+  --franz: #4B3C99; --franz-light: #ECE8FA; --franz-text: #3D2F85;
+  --englisch: #0E6B73; --englisch-light: #E0F2F3; --englisch-text: #0B5560;
+  --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px); --safe-right: env(safe-area-inset-right, 0px);
+}
