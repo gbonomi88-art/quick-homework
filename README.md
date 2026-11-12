@@ -42,7 +42,12 @@ Jeder Push auf `main` wird getestet und auf GitHub Pages veröffentlicht.
 - `src/store/` – Datenmodell, Startdaten, Regeln (`rules.ts`), Aktionen (`actions.ts`: Demo lokal / Klasse über Supabase), Hausi (`hausi.ts`) + Tests
 - `src/backend/` – Supabase-Anbindung · `supabase/` – Schema, Startdaten, SQL-Tests
 - `src/screens/student/`, `src/screens/teacher/` – Screens
-- `src/games/` – jedes Spiel ein eigenes Modul im gemeinsamen Rahmen `GameFrame`
+- `src/games/` – jedes Spiel ein eigenes Modul im gemeinsamen Rahmen `GameFrame`:
+  - Auto-Welt (`hill/`): Gelände-Fahrspiel mit Physik; Shop-Käufe ändern das Fahrverhalten
+  - Hüpf-Held (`jump/`): endloser Springer bis ins Weltall, Sterne kaufen Figuren und Verbesserungen
+  - Torschuss (`kick/`): Wisch-Elfmeter mit Levels, Mauer, Zielscheiben; Münzen kaufen Training und Bälle
+  - Baumeister (`city/`): Aufbau-Stadt mit Einwohnern, Läden, Freude und Stadtstufen
+  - Rekorde, Freischaltungen und Aufträge werden pro Kind gespeichert (`qh_save_progress`)
 - `scripts/extract-svgs.mjs` – übernimmt Grafiken aus den Design-Dateien
 
 Demo-Modus: Alle Daten bleiben im Browser (localStorage).
