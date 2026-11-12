@@ -83,3 +83,9 @@ reset role;
 select pg_temp.check((select count(*) from qh.profiles) = 6 and pg_temp.coins('Mattia') = 900, 'Klasse zurückgesetzt');
 select pg_temp.check((select user_id from qh.profiles where name = 'Brunner') = (select teacher from ids)
   and (select user_id from qh.profiles where name = 'Mattia') = (select mattia from ids), 'Zurücksetzen behält bestehende Konten');
+-- Auto-Welt: Rekord nur steigend
+select pg_temp.as_user(mattia) from ids;
+set role authenticated;
+select public.qh_save_best(120); select public.qh_save_best(80);
+reset role;
+select pg_temp.check((select (garage->>'best')::int from qh.profiles where name = 'Mattia') = 120, 'Rekord wird gespeichert und nie kleiner');

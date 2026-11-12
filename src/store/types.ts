@@ -83,6 +83,8 @@ export interface Garage {
   activeCar: string;
   color: string;
   tuning: string[];
+  /** Weitester Meter-Rekord in der Auto-Welt. */
+  best?: number;
 }
 
 export interface ChatMessage {

@@ -28,3 +28,11 @@
   .shop-left { width: 100%; }
   .shop-header .header-center { display: none; }
 }
+
+.shop-best { margin-left: 10px; font-size: 14px; font-weight: 800; background: var(--accent); color: var(--text); padding: 3px 10px; border-radius: 10px; vertical-align: 3px; }
+.shop-stats { margin: 4px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+.shop-stats div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.shop-stats dt { font-size: 13px; font-weight: 800; color: #DDE7F7; }
+.shop-stats dd { margin: 0; display: flex; gap: 3px; }
+.shop-stats dd span { width: 16px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.2); }
+.shop-stats dd span.on { background: var(--accent); }

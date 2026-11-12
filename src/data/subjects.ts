@@ -45,7 +45,7 @@ export const EVENT_TYPES = {
 } as const;
 
 export const GAMES = {
-  auto: { name: 'Auto-Welt', desc: 'Fahre frei durch die Stadt, kaufe neue Autos und tune sie.', color: '#C8372D', bg: '#FBE1DE' },
+  auto: { name: 'Auto-Welt', desc: 'Fahr über Hügel und Schanzen, kauf Autos und tune sie – aber kipp nicht um!', color: '#C8372D', bg: '#FBE1DE' },
   bau: { name: 'Baumeister', desc: 'Baue deine eigene Stadt mit Kran und Bagger.', color: '#8A5A00', bg: '#FCE9BE' },
   huepf: { name: 'Hüpf-Held', desc: 'Springe über Plattformen und sammle Sterne.', color: '#1F4E8C', bg: '#DDE7F7' },
   tor: { name: 'Torschuss', desc: 'Schiesse Penaltys und treffe ins Tor.', color: '#1E5E37', bg: '#DCEFE2' },

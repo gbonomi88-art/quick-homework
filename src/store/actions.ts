@@ -100,6 +100,11 @@ export const act = {
     local((d) => ({ ...d, buildCity: { ...d.buildCity, [studentId]: cells } }));
     if (cloud()) await rpc('qh_save_city', { p_cells: cells }).catch(() => undefined);
   },
+  /** Neuer Meter-Rekord in der Auto-Welt. */
+  async saveBest(studentId: string, meters: number) {
+    local((d) => ({ ...d, garages: { ...d.garages, [studentId]: { ...R.DEFAULT_GARAGE, ...d.garages[studentId], best: Math.max(meters, d.garages[studentId]?.best ?? 0) } } }));
+    if (cloud()) await rpc('qh_save_best', { p_meters: Math.round(meters) }).catch(() => undefined);
+  },
   async shop(studentId: string, item: string) {
     if (!cloud()) return local((d) => R.shop(d, studentId, item));
     await server('qh_shop', { p_item: item });

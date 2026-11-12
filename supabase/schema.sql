@@ -280,6 +280,17 @@ begin
   update qh.profiles set photo = p_photo where user_id = auth.uid();
 end $$;
 
+-- Auto-Welt: Meter-Rekord speichern (nur steigend).
+create or replace function public.qh_save_best(p_meters int) returns void language plpgsql security definer set search_path = qh, public as $$
+declare p qh.profiles := qh.me();
+  g jsonb := coalesce(p.garage, '{"ownedCars":["flitzer"],"activeCar":"flitzer","color":"#E0352B","tuning":[]}'::jsonb);
+begin
+  if p.role <> 'kid' or p_meters < 0 or p_meters > 100000 then return; end if;
+  if coalesce((g->>'best')::int, 0) < p_meters then
+    update qh.profiles set garage = jsonb_set(g, '{best}', to_jsonb(p_meters)) where user_id = p.user_id;
+  end if;
+end $$;
+
 -- Shop: Preise stehen auf dem Server. Kontostand nie unter 0.
 create or replace function public.qh_shop(p_item text) returns void language plpgsql security definer set search_path = qh, public as $$
 declare

@@ -9,22 +9,18 @@ import './Shop.css';
 
 export const DEFAULT_GARAGE: Garage = GARAGE0;
 
-const SHAPES: Record<string, { name: string; body: string; win: string }> = {
-  flitzer: { name: 'Stadtflitzer', body: 'M30 70 L36 57 Q50 51 72 49 L90 39 Q102 34 118 36 L138 47 Q158 49 164 58 L166 70 Z', win: 'M78 49 L93 41 Q102 38 114 40 L126 48 Z' },
-  renner: { name: 'Rennwagen', body: 'M24 70 L30 60 Q60 56 84 52 L100 44 Q112 41 126 43 L146 52 Q170 54 176 62 L178 70 Z', win: 'M90 52 L104 46 Q112 44 122 45 L134 52 Z' },
-  gelaende: { name: 'Geländewagen', body: 'M30 70 L30 50 Q32 44 40 44 L60 44 L70 30 L130 30 L142 44 L162 46 Q168 48 168 56 L168 70 Z', win: 'M76 33 L126 33 L136 44 L70 44 Z' },
-  bus: { name: 'Mini-Bus', body: 'M26 70 L26 34 Q26 28 32 28 L150 28 Q162 28 166 40 L172 56 L172 70 Z', win: 'M36 34 L150 34 L160 46 L36 46 Z' },
-};
+import { SHAPES } from '../../games/hill/cars';
+import { carStats } from '../../games/hill/engine';
 const TUNING = [
-  { id: 'felgen', name: 'Goldene Felgen', desc: 'Glänzende Räder', price: PRICES.felgen },
-  { id: 'spoiler', name: 'Spoiler', desc: 'Sieht schnell aus', price: PRICES.spoiler },
-  { id: 'turbo', name: 'Turbo', desc: 'Schneller beschleunigen', price: PRICES.turbo },
+  { id: 'felgen', name: 'Goldene Felgen', desc: 'Mehr Grip am Hang', price: PRICES.felgen },
+  { id: 'spoiler', name: 'Spoiler', desc: 'Ruhiger in der Luft – kippt weniger', price: PRICES.spoiler },
+  { id: 'turbo', name: 'Turbo', desc: 'Mehr Kraft und Tempo', price: PRICES.turbo },
 ];
 const CARS = [
-  { id: 'flitzer', price: 0, desc: 'Dein erstes Auto', dot: '#E0352B' },
-  { id: 'bus', price: PRICES.bus, desc: 'Platz für alle deine Freunde', dot: '#1F4E8C' },
-  { id: 'gelaende', price: PRICES.gelaende, desc: 'Fährt auch über Stock und Stein', dot: '#2F7D4F' },
-  { id: 'renner', price: PRICES.renner, desc: 'Flach, schnell und laut', dot: '#F2B33D' },
+  { id: 'flitzer', price: 0, desc: 'Dein erstes Auto – gut für den Anfang', dot: '#E0352B' },
+  { id: 'bus', price: PRICES.bus, desc: 'Schwer und stabil – kippt kaum um', dot: '#1F4E8C' },
+  { id: 'gelaende', price: PRICES.gelaende, desc: 'Grosse Räder, viel Grip am Berg', dot: '#2F7D4F' },
+  { id: 'renner', price: PRICES.renner, desc: 'Sehr schnell, aber kippelig', dot: '#F2B33D' },
 ];
 const COLORS: [string, string][] = [['#E0352B', 'Rot'], ['#1F4E8C', 'Blau'], ['#2F7D4F', 'Grün'], ['#F2B33D', 'Gelb'], ['#FFFFFF', 'Weiss']];
 
@@ -73,7 +69,15 @@ export function Shop() {
           <div className="shop-car">
             <div className="shop-car-label">MEIN AUTO</div>
             <CarPreview g={g} />
-            <div className="shop-car-name">{SHAPES[g.activeCar].name}</div>
+            <div className="shop-car-name">{SHAPES[g.activeCar].name}{g.best ? <span className="shop-best">Rekord: {g.best} m</span> : null}</div>
+            <dl className="shop-stats">
+              {Object.entries(carStats(g)).map(([k, v]) => (
+                <div key={k}>
+                  <dt>{({ tempo: 'Tempo', kraft: 'Kraft', grip: 'Grip', stabil: 'Stabilität' } as Record<string, string>)[k]}</dt>
+                  <dd aria-label={`${v} von 5`}>{[1, 2, 3, 4, 5].map((i) => <span key={i} className={i <= v ? 'on' : ''} />)}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
           <div className="shop-card">
             <div className="shop-card-title">Farbe ändern <span>· {PRICES.color} Spielgeld</span></div>
