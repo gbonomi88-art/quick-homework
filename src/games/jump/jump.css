@@ -15,3 +15,10 @@
 @media (max-width: 699px) {
   .gf-huepf .gf-skip, .gf-tor .gf-skip { top: auto; right: auto; left: 50%; transform: translateX(-50%); bottom: calc(14px + var(--safe-bottom)); font-size: 11px; padding: 0 8px; max-width: 160px; }
 }
+.kk-lives { display: flex; gap: 5px; align-items: center; min-height: 36px; }
+.kk-lives i { width: 18px; height: 18px; border-radius: 9px; background: radial-gradient(circle at 35% 35%, #FFFFFF 0 40%, #DDDDDD 41% 100%); border: 2px solid #222; }
+.kk-streak { background: #F2B33D; color: var(--text); }
+.kk-msg { top: 18%; }
+.kk-hint { position: absolute; left: 50%; bottom: calc(70px + var(--safe-bottom)); transform: translateX(-50%); width: min(520px, calc(100% - 32px)); background: rgba(255,255,255,0.95); color: var(--text);
+  border-radius: 18px; padding: 12px 16px; font-size: 16px; line-height: 1.4; text-align: center; pointer-events: none; z-index: 4; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+@media (max-width: 699px) { .kk-hint { bottom: calc(150px + var(--safe-bottom)); font-size: 14px; } }
