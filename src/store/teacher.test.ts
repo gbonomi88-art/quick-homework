@@ -32,7 +32,7 @@ describe('Lehrerin: Schüler verwalten', () => {
     const mia = d.students.find((s) => s.name === 'Mia')!;
     expect(mia.coins).toBe(0);
     expect(mia.isNew).toBe(true);
-    expect(d.submissions.filter((s) => s.studentId === mia.id)).toHaveLength(5);
+    expect(d.submissions.filter((s) => s.studentId === mia.id)).toHaveLength(d.homeworks.filter((h) => h.dueWeekOffset >= 0).length);
   });
   it('ändert Name und Passwort, aber nie Spielgeld', () => {
     const d = R.updateStudent(createSeed(), 'mattia', { name: 'Mattia B.', password: 'Neu123', coins: 0 } as never);

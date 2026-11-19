@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DEMO_TODAY, WEEKDAYS, dateLabel, weekTitle } from '../store/constants';
+import { DEMO_TODAY, MAX_WEEK, WEEKDAYS, dateLabel, weekTitle } from '../store/constants';
 import { agendaItems, type AgendaItem } from '../store/selectors';
 import type { DemoData, WeekOffset } from '../store/types';
 import { EVENT_TYPES } from '../data/subjects';
@@ -7,7 +7,7 @@ import { IconBack, IconChevronRight, IconX } from './icons';
 import { useMedia } from '../utils/useMedia';
 import './AgendaWeek.css';
 
-const BADGE: Record<WeekOffset, string> = { [-1]: 'Letzte Woche', 0: 'Diese Woche', 1: 'Nächste Woche' };
+const badge = (w: WeekOffset) => (w === -1 ? 'Letzte Woche' : w === 0 ? 'Diese Woche' : w === 1 ? 'Nächste Woche' : `In ${w} Wochen`);
 
 interface Props {
   data: DemoData;
@@ -24,7 +24,7 @@ export function AgendaWeek({ data, week, onWeek, onDelete }: Props) {
   const items = agendaItems(data, week);
   const arrow = (dir: -1 | 1) => {
     const w = week + dir;
-    const on = w >= -1 && w <= 1;
+    const on = w >= -1 && w <= MAX_WEEK;
     return (
       <button type="button" className="ag-arrow" disabled={!on} aria-label={dir < 0 ? 'Vorherige Woche' : 'Nächste Woche'}
         onClick={() => { onWeek(w as WeekOffset); setDay(w === 0 ? DEMO_TODAY.weekday : 0); }}>
@@ -54,7 +54,7 @@ export function AgendaWeek({ data, week, onWeek, onDelete }: Props) {
           {arrow(-1)}
           <h1 aria-live="polite">{weekTitle(week)}</h1>
           {arrow(1)}
-          <span className="ag-badge">{BADGE[week]}</span>
+          <span className="ag-badge">{badge(week)}</span>
         </div>
         <div className="ag-legend">
           {(['test', 'bib', 'ausflug', 'sonst', 'abgabe'] as const).map((k) => (

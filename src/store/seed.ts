@@ -1,4 +1,5 @@
 import type { DemoData, Homework, Submission, Student } from './types';
+import { WEEK_EVENTS, WEEK_HOMEWORKS } from './seedWeeks';
 
 const student = (id: string, name: string, password: string, coins: number): Student => ({
   id, name, password, coins, forgottenThisMonth: 0, skipNextGame: false, lockedUntilPositive: false,
@@ -71,6 +72,7 @@ export const SEED_HOMEWORKS: Homework[] = [
       { kind: 'question', question: '9 × 9', sampleSolution: '81' },
     ],
   },
+  ...WEEK_HOMEWORKS.map((h): Homework => ({ ...h, createdBy: 'teacher' })),
 ];
 
 export const STUDENT_IDS = ['mattia', 'lina', 'noah', 'elif', 'luca'];
@@ -93,7 +95,7 @@ function seedSubmissions(): Submission[] {
       seenByStudent: sid !== 'mattia', rewardUsed: true });
   }
   const submittedNmg = ['lina', 'noah', 'elif'];
-  for (const hw of SEED_HOMEWORKS.filter((h) => h.dueWeekOffset === 0)) {
+  for (const hw of SEED_HOMEWORKS.filter((h) => h.dueWeekOffset >= 0)) {
     for (const sid of STUDENT_IDS) {
       const done = hw.id === 'hw-nmg' && submittedNmg.includes(sid);
       subs.push({
@@ -132,6 +134,7 @@ export function createSeed(): DemoData {
       { id: 'e9', weekOffset: 1, weekday: 2, type: 'test', time: '10:00', title: 'Englisch-Test: My Day', note: 'Lernen: Unit 3' },
       { id: 'e10', weekOffset: 1, weekday: 3, type: 'sonst', time: '19:00', title: 'Elternabend', note: 'Sag es deinen Eltern.' },
       { id: 'e11', weekOffset: 1, weekday: 4, type: 'ausflug', time: '14:00', title: 'Theater-Besuch', note: 'Wir treffen uns beim Schulhaus.' },
+      ...structuredClone(WEEK_EVENTS),
     ],
     settings: {
       coinsPerSubmission: 150, allowedGames: ['auto', 'bau', 'huepf', 'tor'], maxMinutes: 30,

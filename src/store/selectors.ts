@@ -13,7 +13,7 @@ export function studentEntries(d: DemoData, studentId: string): HomeworkEntry[] 
 }
 
 /** Hausaufgaben ab dieser Woche (für Übersicht und Fortschritt). */
-export const currentEntries = (d: DemoData, studentId: string) => studentEntries(d, studentId).filter((e) => e.hw.dueWeekOffset >= 0);
+export const currentEntries = (d: DemoData, studentId: string) => studentEntries(d, studentId).filter((e) => e.hw.dueWeekOffset >= 0 && e.hw.dueWeekOffset <= 1);
 
 export const isDone = (s: Submission) => s.status === 'abgegeben' || s.status === 'korrigiert';
 

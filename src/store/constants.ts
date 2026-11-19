@@ -26,6 +26,15 @@ export function dateLabel(weekOffset: number, weekday: number): string {
   const d = dayOf(weekOffset, weekday);
   return `${d.getDate()}.${d.getMonth() + 1}.`;
 }
+/** Wie weit die Agenda nach vorne reicht (Wochen). */
+export const MAX_WEEK = 4;
+/** „Mo“, „nächsten Mo“, „letzten Mo“ oder „Mo, 7.12.“ für spätere Wochen. */
+export function dayLabel(weekOffset: number, weekday: number, names: readonly string[]): string {
+  if (weekOffset === 0) return names[weekday];
+  if (weekOffset === 1) return `nächsten ${names[weekday]}`;
+  if (weekOffset === -1) return `letzten ${names[weekday]}`;
+  return `${names[weekday]}, ${dateLabel(weekOffset, weekday)}`;
+}
 export function weekTitle(weekOffset: number): string {
   const a = dayOf(weekOffset, 0), b = dayOf(weekOffset, 4);
   return a.getMonth() === b.getMonth()

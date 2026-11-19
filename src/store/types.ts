@@ -2,7 +2,8 @@ export type SubjectId = 'nmg' | 'mathe' | 'deutsch' | 'franz' | 'englisch';
 export type TaskKind = 'compare' | 'question' | 'transform';
 export type GameId = 'auto' | 'bau' | 'huepf' | 'tor';
 export type Weekday = 0 | 1 | 2 | 3 | 4;
-export type WeekOffset = -1 | 0 | 1;
+/** Woche relativ zu heute: letzte Woche (-1) bis vier Wochen voraus. */
+export type WeekOffset = -1 | 0 | 1 | 2 | 3 | 4;
 
 // HINWEIS: Showcase. Passwörter liegen im Klartext im Browser.
 // Ein echtes Produkt braucht Passwort-Hashing und Server-Authentifizierung.

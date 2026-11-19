@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { act, errorText } from '../../store/actions';
-import { WEEKDAYS } from '../../store/constants';
+import { WEEKDAYS, dayLabel } from '../../store/constants';
 import { SUBJECTS, TASK_COLORS } from '../../data/subjects';
 import { SubHeader } from '../../components/StudentHeader';
 import { HausiChat } from '../../components/HausiChat';
@@ -61,7 +61,7 @@ export function Aufgabe() {
             <div style={{ flexGrow: 1, minWidth: 0 }}>
               <div className="auf-head-meta">
                 <span style={{ color: m.text, fontWeight: 900 }}>{m.label.toUpperCase()}</span>
-                <span style={{ color: m.muted }}>· Abgabe: {hw.dueWeekOffset === -1 ? 'letzten ' : hw.dueWeekOffset === 1 ? 'nächsten ' : ''}{WEEKDAYS[hw.dueWeekday]}</span>
+                <span style={{ color: m.muted }}>· Abgabe: {dayLabel(hw.dueWeekOffset, hw.dueWeekday, WEEKDAYS)}</span>
                 {hw.important && <span className="tag-important">WICHTIG</span>}
               </div>
               <h1 style={{ color: m.title }}>{hw.title}</h1>

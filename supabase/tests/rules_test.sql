@@ -3,9 +3,9 @@ select qh.seed_class('6c');
 create temp table ids as select
   (select user_id from qh.profiles where name='Mattia') mattia,
   (select user_id from qh.profiles where name='Brunner') teacher,
-  (select s.id from qh.submissions s join qh.homeworks h on h.id=s.homework_id join qh.profiles p on p.user_id=s.student_id where p.name='Mattia' and h.subject='mathe' and s.status='offen') mathe,
-  (select s.id from qh.submissions s join qh.homeworks h on h.id=s.homework_id join qh.profiles p on p.user_id=s.student_id where p.name='Mattia' and h.subject='franz') franz,
-  (select s.id from qh.submissions s join qh.homeworks h on h.id=s.homework_id join qh.profiles p on p.user_id=s.student_id where p.name='Mattia' and h.subject='deutsch') deutsch;
+  (select s.id from qh.submissions s join qh.homeworks h on h.id=s.homework_id join qh.profiles p on p.user_id=s.student_id where p.name='Mattia' and h.title='Brüche und Dezimalzahlen vergleichen') mathe,
+  (select s.id from qh.submissions s join qh.homeworks h on h.id=s.homework_id join qh.profiles p on p.user_id=s.student_id where p.name='Mattia' and h.title='Vokabeln: Les animaux') franz,
+  (select s.id from qh.submissions s join qh.homeworks h on h.id=s.homework_id join qh.profiles p on p.user_id=s.student_id where p.name='Mattia' and h.title='Verben in der Vergangenheit') deutsch;
 grant select on ids to authenticated;
 create function pg_temp.as_user(u uuid) returns void language sql as $$ select set_config('request.jwt.claim.sub', u::text, false) $$;
 create function pg_temp.check(c boolean, msg text) returns void language plpgsql as $$ begin if not c then raise exception 'FEHLER: %', msg; end if; raise notice '✓ %', msg; end $$;
@@ -38,9 +38,9 @@ set role authenticated;
 select public.qh_mark_not_done(franz) from ids;
 reset role;
 select pg_temp.check(pg_temp.coins('Mattia') = 100 and (select skip_next_game from qh.profiles where name='Mattia'), '1. Mal: gestrichen, kein Abzug');
-insert into qh.submissions (homework_id, student_id) select h.id, (select mattia from ids) from qh.homeworks h where h.subject='englisch'
+insert into qh.submissions (homework_id, student_id) select h.id, (select mattia from ids) from qh.homeworks h where h.title='My Day'
   on conflict (homework_id, student_id) do nothing;
-create temp table eng as select s.id from qh.submissions s join qh.homeworks h on h.id=s.homework_id where h.subject='englisch' and s.student_id=(select mattia from ids);
+create temp table eng as select s.id from qh.submissions s join qh.homeworks h on h.id=s.homework_id where h.title='My Day' and s.student_id=(select mattia from ids);
 grant select on eng to authenticated;
 set role authenticated;
 select public.qh_mark_not_done(id) from eng;

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { act, errorText } from '../../store/actions';
-import { WEEKDAYS } from '../../store/constants';
+import { WEEKDAYS, dayLabel } from '../../store/constants';
 import type { GameId, Homework } from '../../store/types';
 import { GAMES, SUBJECTS } from '../../data/subjects';
 import { resizeImage } from '../../utils/image';
@@ -57,7 +57,7 @@ export function Lehrerin() {
             {h.important && <span className="tag-important">WICHTIG</span>}
           </span>
           <span className="t-hw-title">{h.title}</span>
-          <span className="t-hw-sub">{kindText(h)} · Abgabe {h.dueWeekOffset === 1 ? 'nächsten ' : h.dueWeekOffset === -1 ? 'letzten ' : ''}{WEEKDAYS[h.dueWeekday]}</span>
+          <span className="t-hw-sub">{kindText(h)} · Abgabe {dayLabel(h.dueWeekOffset, h.dueWeekday, WEEKDAYS)}</span>
         </button>
       </li>
     );

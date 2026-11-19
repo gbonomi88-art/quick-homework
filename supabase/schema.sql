@@ -174,18 +174,18 @@ begin
           case when p.role = 'teacher' then h.tasks else (
             select jsonb_agg(t - 'solution' - 'sampleSolution') from jsonb_array_elements(h.tasks) t) end,
         'hausiTip', h.hausi_tip, 'createdBy', 'teacher') order by h.due_date)
-      from qh.homeworks h where h.class_id = p.class_id and h.due_date >= mon - 7 and h.due_date < mon + 14), '[]'),
+      from qh.homeworks h where h.class_id = p.class_id and h.due_date >= mon - 7 and h.due_date < mon + 35), '[]'),
     'submissions', coalesce((select jsonb_agg(jsonb_build_object(
         'id', s.id, 'homeworkId', s.homework_id, 'studentId', s.student_id, 'answers', s.answers, 'status', s.status,
         'grading', s.grading, 'comment', s.comment, 'reward', s.reward, 'baseReward', s.base_reward,
         'seenByStudent', s.seen_by_student, 'rewardUsed', s.reward_used))
       from qh.submissions s join qh.homeworks h on h.id = s.homework_id
-      where h.class_id = p.class_id and h.due_date >= mon - 7 and h.due_date < mon + 14
+      where h.class_id = p.class_id and h.due_date >= mon - 7 and h.due_date < mon + 35
         and (p.role = 'teacher' or s.student_id = p.user_id)), '[]'),
     'events', coalesce((select jsonb_agg(jsonb_build_object(
         'id', e.id, 'weekOffset', (qh.monday(e.date) - mon) / 7, 'weekday', extract(isodow from e.date)::int - 1,
         'type', e.type, 'time', e.time, 'title', e.title, 'note', e.note) order by e.date, e.time)
-      from qh.events e where e.class_id = p.class_id and e.date >= mon - 7 and e.date < mon + 14
+      from qh.events e where e.class_id = p.class_id and e.date >= mon - 7 and e.date < mon + 35
         and extract(isodow from e.date) <= 5), '[]'),
     'garages', case when p.role = 'kid' and p.garage is not null then jsonb_build_object(p.user_id::text, p.garage) else '{}'::jsonb end,
     'buildCity', case when p.role = 'kid' and p.build_city is not null then jsonb_build_object(p.user_id::text, p.build_city) else '{}'::jsonb end,
@@ -434,7 +434,7 @@ create or replace function public.qh_add_event(p jsonb) returns uuid language pl
 declare t qh.profiles := qh.require_teacher(); eid uuid; wo int := (p->>'weekOffset')::int; wd int := (p->>'weekday')::int;
 begin
   if coalesce(trim(p->>'title'), '') = '' then raise exception 'Bitte einen Titel eingeben.'; end if;
-  if wo not between -1 and 1 or wd not between 0 and 4 then raise exception 'Ungültiger Tag'; end if;
+  if wo not between -1 and 4 or wd not between 0 and 4 then raise exception 'Ungültiger Tag'; end if;
   insert into qh.events (class_id, date, type, time, title, note)
   values (t.class_id, qh.monday(qh.today()) + wo * 7 + wd, p->>'type', nullif(p->>'time', ''), trim(p->>'title'), nullif(trim(coalesce(p->>'note', '')), ''))
   returning id into eid;
@@ -450,6 +450,49 @@ create or replace function public.qh_login_email(p_class text, p_name text) retu
   select qh.login_email(p_class, p_name) $$;
 
 -- ---------- Startdaten (relativ zur aktuellen Woche) ----------
+-- Beispiel-Hausaufgaben und -Termine für die Wochen +1 bis +4 nach p_mon (Quelle: src/store/seedWeeks.ts).
+create or replace function qh.seed_weeks(p_class text, p_mon date) returns void language plpgsql security definer set search_path = qh, public as $$
+begin
+  insert into qh.homeworks (class_id, subject, title, instruction, due_date, important, kind, tasks, hausi_tip) values
+  (p_class, 'mathe', 'Grosse Zahlen vergleichen', 'Setze das richtige Zeichen ein: < (kleiner), > (grösser) oder = (gleich).', p_mon + 8, false, 'compare',
+   '[{"kind":"compare","left":"45 000","right":"45 100","solution":"<"},{"kind":"compare","left":"1 000 000","right":"999 999","solution":">"},{"kind":"compare","left":"3,5 km","right":"3500 m","solution":"="},{"kind":"compare","left":"0,75","right":"3/4","solution":"="}]', 'Schreib beide Zahlen in der gleichen Einheit untereinander und vergleiche Stelle für Stelle.'),
+  (p_class, 'deutsch', 'Nomen in der Mehrzahl', 'Schreib das Nomen in der Mehrzahl – mit Artikel.', p_mon + 9, false, 'question',
+   '[{"kind":"question","question":"das Kind","placeholder":"die …","sampleSolution":"die Kinder"},{"kind":"question","question":"der Baum","placeholder":"die …","sampleSolution":"die Bäume"},{"kind":"question","question":"die Maus","placeholder":"die …","sampleSolution":"die Mäuse"},{"kind":"question","question":"das Buch","placeholder":"die …","sampleSolution":"die Bücher"}]', null),
+  (p_class, 'englisch', 'The Weather', 'Wie heisst das Wetter auf Englisch?', p_mon + 10, false, 'question',
+   '[{"kind":"question","question":"der Regen","sampleSolution":"the rain"},{"kind":"question","question":"der Schnee","sampleSolution":"the snow"},{"kind":"question","question":"die Sonne","sampleSolution":"the sun"},{"kind":"question","question":"Wie sagst du «Es ist kalt»?","sampleSolution":"It is cold."}]', null),
+  (p_class, 'nmg', 'Der Wald im Winter', 'Beantworte die Fragen in ganzen Sätzen.', p_mon + 15, true, 'question',
+   '[{"kind":"question","question":"Nenne zwei Tiere, die Winterschlaf halten."},{"kind":"question","question":"Warum verlieren Laubbäume im Herbst ihre Blätter?"},{"kind":"question","question":"Was fressen Rehe im Winter?"},{"kind":"question","question":"Nenne einen Nadelbaum.","sampleSolution":"Tanne oder Fichte"}]', 'Überleg dir, was Tiere und Bäume tun, wenn es kalt wird und wenig Futter gibt.'),
+  (p_class, 'mathe', 'Geteilt-Rechnungen', 'Rechne aus.', p_mon + 16, false, 'question',
+   '[{"kind":"question","question":"56 : 7","sampleSolution":"8"},{"kind":"question","question":"81 : 9","sampleSolution":"9"},{"kind":"question","question":"144 : 12","sampleSolution":"12"},{"kind":"question","question":"63 : 9","sampleSolution":"7"}]', null),
+  (p_class, 'franz', 'Vokabeln: Les couleurs', 'Übersetze die Farben ins Deutsche.', p_mon + 17, false, 'question',
+   '[{"kind":"question","question":"rouge","sampleSolution":"rot"},{"kind":"question","question":"bleu","sampleSolution":"blau"},{"kind":"question","question":"vert","sampleSolution":"grün"},{"kind":"question","question":"jaune","sampleSolution":"gelb"}]', null),
+  (p_class, 'deutsch', 'Das Subjekt finden', 'Schreib das Subjekt des Satzes auf. Frag: Wer oder was …?', p_mon + 22, false, 'question',
+   '[{"kind":"question","question":"Der Hund bellt laut.","sampleSolution":"Der Hund"},{"kind":"question","question":"Am Morgen fährt Lina mit dem Velo.","sampleSolution":"Lina"},{"kind":"question","question":"Die Kerzen leuchten hell.","sampleSolution":"Die Kerzen"},{"kind":"question","question":"Im Winter schläft der Igel.","sampleSolution":"der Igel"}]', 'Frag «Wer oder was bellt?» – die Antwort ist das Subjekt.'),
+  (p_class, 'englisch', 'Simple Past', 'Write the verb in the simple past.', p_mon + 23, false, 'question',
+   '[{"kind":"question","question":"I play","placeholder":"I …","sampleSolution":"I played"},{"kind":"question","question":"she walks","placeholder":"she …","sampleSolution":"she walked"},{"kind":"question","question":"we go","placeholder":"we …","sampleSolution":"we went"},{"kind":"question","question":"they eat","placeholder":"they …","sampleSolution":"they ate"}]', null),
+  (p_class, 'mathe', 'Masse und Zeit vergleichen', 'Setze das richtige Zeichen ein: < (kleiner), > (grösser) oder = (gleich).', p_mon + 24, false, 'compare',
+   '[{"kind":"compare","left":"3 kg","right":"3000 g","solution":"="},{"kind":"compare","left":"250 g","right":"0,5 kg","solution":"<"},{"kind":"compare","left":"2 l","right":"1500 ml","solution":">"},{"kind":"compare","left":"1 h","right":"50 min","solution":">"}]', 'Rechne zuerst in die kleinere Einheit um: 1 kg = 1000 g, 1 l = 1000 ml, 1 h = 60 min.'),
+  (p_class, 'nmg', 'Die Schweiz', 'Beantworte die Fragen. Du darfst die Schweizer Karte benutzen.', p_mon + 29, false, 'question',
+   '[{"kind":"question","question":"Wie heisst die Bundesstadt der Schweiz?","sampleSolution":"Bern"},{"kind":"question","question":"Wie viele Kantone hat die Schweiz?","sampleSolution":"26"},{"kind":"question","question":"Welcher Fluss fliesst durch Basel?","sampleSolution":"der Rhein"},{"kind":"question","question":"Nenne die vier Landessprachen.","sampleSolution":"Deutsch, Französisch, Italienisch, Rätoromanisch"}]', null),
+  (p_class, 'franz', 'Le verbe «être»', 'Schreib die richtige Form von «être» auf.', p_mon + 30, false, 'question',
+   '[{"kind":"question","question":"je … (être)","placeholder":"je …","sampleSolution":"je suis"},{"kind":"question","question":"tu … (être)","placeholder":"tu …","sampleSolution":"tu es"},{"kind":"question","question":"il … (être)","placeholder":"il …","sampleSolution":"il est"},{"kind":"question","question":"nous … (être)","placeholder":"nous …","sampleSolution":"nous sommes"}]', null),
+  (p_class, 'mathe', 'Advents-Rechnungen', 'Löse die Textaufgaben. Schreib die Antwort mit Einheit.', p_mon + 31, true, 'question',
+   '[{"kind":"question","question":"Ein Adventskalender hat 24 Türchen. 9 sind schon offen. Wie viele sind noch zu?","sampleSolution":"15"},{"kind":"question","question":"Lina backt 4 Bleche mit je 12 Guetzli. Wie viele Guetzli sind es?","sampleSolution":"48"},{"kind":"question","question":"Ein Christbaum kostet 45 Fr., die Kugeln 18 Fr. Wie viel kostet alles zusammen?","sampleSolution":"63 Fr."},{"kind":"question","question":"36 Kerzen werden auf 4 Kinder verteilt. Wie viele bekommt jedes Kind?","sampleSolution":"9"}]', 'Lies die Aufgabe zweimal und überlege: Muss ich plus, minus, mal oder geteilt rechnen?');
+  insert into qh.events (class_id, date, type, time, title, note) values
+  (p_class, p_mon + 14, 'bib', '10:00', 'Bibliothek', 'Ausgeliehene Bücher mitbringen.'),
+  (p_class, p_mon + 17, 'test', '08:15', 'Mathe-Test: Grosse Zahlen', 'Lernen: Seite 40–43'),
+  (p_class, p_mon + 18, 'sonst', '10:00', 'Samichlaus besucht die Klasse', 'Ein Värsli oder Lied vorbereiten.'),
+  (p_class, p_mon + 21, 'bib', '10:00', 'Bibliothek', 'Neues Buch ausleihen.'),
+  (p_class, p_mon + 22, 'test', '13:30', 'Französisch: Vokabeltest', 'Les couleurs'),
+  (p_class, p_mon + 23, 'ausflug', '09:00', 'Besuch im Naturmuseum', 'Znüni und Trinkflasche mitnehmen.'),
+  (p_class, p_mon + 25, 'sonst', '08:00', 'Schlittschuhlaufen', 'Handschuhe und Mütze mitnehmen.'),
+  (p_class, p_mon + 28, 'bib', '10:00', 'Bibliothek', 'Letzte Ausleihe vor den Ferien.'),
+  (p_class, p_mon + 30, 'test', '10:00', 'Englisch-Test: Simple Past', 'Lernen: Unit 4'),
+  (p_class, p_mon + 31, 'sonst', '18:00', 'Weihnachtssingen', 'Eltern sind herzlich eingeladen.'),
+  (p_class, p_mon + 32, 'sonst', '11:45', 'Letzter Schultag – Ferienbeginn', 'Schöne Weihnachtsferien!');
+end $$;
+
+
 create or replace function qh.seed_class(p_class text) returns void language plpgsql security definer set search_path = qh, auth, extensions, public as $$
 declare mon date := qh.monday(qh.today()); kid record; uid uuid;
   kids jsonb := '[["Mattia","Sonne2026",900],["Lina","Mond2026",450],["Noah","Wolke17",400],["Elif","Blitz88",450],["Luca","Stern55",400]]';
@@ -497,6 +540,7 @@ begin
    '[{"kind":"question","question":"What time do you get up?","placeholder":"I get up at …"},{"kind":"question","question":"What do you eat for breakfast?","placeholder":"I eat …"},{"kind":"question","question":"How do you go to school?","placeholder":"I go to school by …"},{"kind":"question","question":"What do you do after school?","placeholder":"After school I …"}]', null),
   (p_class, 'mathe', 'Malrechnungen bis 100', 'Rechne aus.', mon - 5, false, 'question',
    '[{"kind":"question","question":"7 × 8","sampleSolution":"56"},{"kind":"question","question":"6 × 9","sampleSolution":"54"},{"kind":"question","question":"4 × 12","sampleSolution":"48"},{"kind":"question","question":"9 × 9","sampleSolution":"81"}]', null);
+  perform qh.seed_weeks(p_class, mon);
   -- offene Abgaben für alle aktuellen Hausaufgaben
   insert into qh.submissions (homework_id, student_id, answers)
   select h.id, k.user_id, '["","","",""]' from qh.homeworks h cross join qh.profiles k

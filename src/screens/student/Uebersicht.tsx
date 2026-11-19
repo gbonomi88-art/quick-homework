@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { currentEntries, isDone, SHORT_DAYS, tomorrowTests, upcomingEvents, eventShort } from '../../store/selectors';
 import { lockReason } from '../../store/rules';
-import { WEEKDAYS } from '../../store/constants';
+import { WEEKDAYS, dayLabel } from '../../store/constants';
 import { SUBJECTS, EVENT_TYPES, GAMES } from '../../data/subjects';
 import { StudentHeader } from '../../components/StudentHeader';
 import { HausiWave } from '../../components/Hausi';
@@ -78,7 +78,7 @@ export function Uebersicht() {
                       </div>
                       <div className="ov-card-title">{hw.title}</div>
                       <div className="ov-card-due" style={{ color: m.muted }}>
-                        Abgabe: {hw.dueWeekOffset === 1 ? 'nächsten ' : ''}{WEEKDAYS[hw.dueWeekday]}
+                        Abgabe: {dayLabel(hw.dueWeekOffset, hw.dueWeekday, WEEKDAYS)}
                       </div>
                     </div>
                     <IconChevronRight size={28} />
@@ -114,7 +114,7 @@ export function Uebersicht() {
             </div>
             {next.map((e) => {
               const t = EVENT_TYPES[e.type];
-              const day = `${e.weekOffset === 1 ? 'nächsten ' : ''}${SHORT_DAYS[e.weekday]}${e.time ? `, ${e.time}` : ''}`;
+              const day = `${dayLabel(e.weekOffset, e.weekday, SHORT_DAYS)}${e.time ? `, ${e.time}` : ''}`;
               return (
                 <div key={e.id} className="ov-next-item" style={{ background: t.light, borderColor: e.type === 'test' ? t.dark : 'transparent' }}>
                   <span className="ov-next-badge" style={{ background: t.dark }}>{t.label}</span>
